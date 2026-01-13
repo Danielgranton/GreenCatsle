@@ -234,7 +234,7 @@ const Navbar = ({setShowLogin, setCategory, category}) => {
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className='flex flex-col items-center  p-2 rounded-lg  hover:bg-white/20 transition-all duration-300'
           >
-            <img className='h-10 w-10 rounded-full object-cover border-2 border-white/30 ' src="/src/assets/logo.jpeg" alt="User Avatar" />
+            <img className='h-10 w-10 rounded-full object-cover border-2 border-white/30 ' src="/images/logo.jpeg" alt="User Avatar" />
             <span className='text-gray-900 capitalize font-bold text-sm'> Hi,{user?.name || 'User'}</span>
           </button>
 
@@ -243,7 +243,7 @@ const Navbar = ({setShowLogin, setCategory, category}) => {
             <div className='absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-top-2 duration-200 z-80'>
               <div className='bg-gradient-to-r from-blue-500 to-purple-600 p-4'>
                 <div className='flex items-center gap-3'>
-                  <img className='h-8 w-8 rounded-full object-cover border-2 border-white/30' src="/src/assets/logo.jpeg" alt="User Avatar" />
+                  <img className='h-8 w-8 rounded-full object-cover border-2 border-white/30' src="/images/logo.jpeg" alt="User Avatar" />
                   <div className='text-white'>
                     <h3 className='font-bold text-lg'>{user?.name || 'User'}</h3>
                     <p className='text-sm opacity-90'>{user?.email || 'user@example.com'}</p>
@@ -393,7 +393,7 @@ const Navbar = ({setShowLogin, setCategory, category}) => {
               <div className="flex items-center space-x-4 p-4 bg-white/20 rounded-xl backdrop-blur-sm">
                 <img
                   className="h-12 w-12 rounded-full object-cover border-2 border-white/30"
-                  src="/src/assets/logo.jpeg"
+                  src="/images/logo.jpeg"
                   alt="User Avatar"
                 />
                 <div>
