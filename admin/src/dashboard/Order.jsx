@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import {jwtDecode} from "jwt-decode";
+import.meta.env.VITE_BACKEND_URL;
 
 const Order = () => {
     const navigate = useNavigate();
@@ -10,7 +11,7 @@ const Order = () => {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [statusFilter, setStatusFilter] = useState('all');
     const [loading, setLoading] = useState(true);
-    const url = "http://localhost:4000";
+    const url = import.meta.env.VITE_BACKEND_URL;
 
     // Fetch orders
     const token = localStorage.getItem("adminToken");
@@ -88,7 +89,7 @@ const Order = () => {
 
         try {
             
-            const response = await axios.delete(`http://localhost:4000/api/orders/${orderId}`, {
+            const response = await axios.delete(`${url}/api/orders/${orderId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 

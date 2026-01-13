@@ -48,7 +48,7 @@ const Navbar = () => {
   return (
     <div className='bg-gray-500 border-b border-gray-200 flex justify-between items-center px-6 py-4 fixed top-0 left-0 w-full shadow-sm z-50'>
       <div className='flex items-center gap-3'>
-        <img className='h-13 w-13 rounded-lg shadow-sm' src="/src/assets/logo.png" alt="Logo" />
+        <img className='h-13 w-13 rounded-lg shadow-sm' src="/images/logo.png" alt="Logo" />
         <h1 className='text-xl font-bold text-gray-800'>Admin Panel</h1>
       </div>
 
@@ -60,7 +60,7 @@ const Navbar = () => {
         >
           <img
             className='h-10 w-10 rounded-full border-2 border-gray-200 shadow-sm'
-            src="/src/assets/logo.jpeg"
+            src="/images/logo.jpeg"
             alt="Admin avatar"
           />
           <svg
@@ -81,7 +81,7 @@ const Navbar = () => {
               <div className='flex items-center gap-3'>
                 <img
                   className='h-10 w-10 rounded-full border-2 border-green-200'
-                  src="/src/assets/logo.jpeg"
+                  src="/images/logo.jpeg"
                   alt="Admin avatar"
                 />
                 <div className='flex-1 min-w-0'>

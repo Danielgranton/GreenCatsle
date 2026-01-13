@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import.meta.env.VITE_BACKEND_URL;
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -12,6 +13,8 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+  const url = import.meta.env.VITE_BACKEND_URL;
+
 
   const validateForm = () => {
     const newErrors = {};
@@ -36,7 +39,7 @@ const AdminLogin = () => {
   setLoading(true);
   try {
     // Send login request
-    const response = await axios.post('http://localhost:4000/api/users/login', { email, password });
+    const response = await axios.post(url + '/api/users/login', { email, password });
 
     if (response.data.success) {
       // Save token and role

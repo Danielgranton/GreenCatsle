@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import.meta.env.VITE_BACKEND_URL;
 
 const Stats = () => {
     const [stats, setStats] = useState({
@@ -23,7 +24,7 @@ const Stats = () => {
         userGrowth: []
     });
     const [loading, setLoading] = useState(true);
-    const url = "http://localhost:4000";
+    const url = import.meta.env.VITE_BACKEND_URL
 
     useEffect(() => {
         fetchStats();

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate, useParams } from "react-router-dom";
+import.meta.env.VITE_BACKEND_URL;
 
 const Add = () => {
   const { id } = useParams();
@@ -10,6 +11,7 @@ const Add = () => {
   const [, setExistingImage] = useState("");
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState("");
+  const url = import.meta.env.VITE_BACKEND_URL;
   
   const [data, setData] = useState({
     name: "",
@@ -35,7 +37,7 @@ const Add = () => {
         return toast.error("Not authorized .please login");
       }
       try {
-        const response = await axios.get(`http://localhost:4000/api/food/${id}` ,{
+        const response = await axios.get(url + `/api/food/${id}` ,{
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -52,7 +54,7 @@ const Add = () => {
           });
 
           setExistingImage(food.image);
-          setPreview(`http://localhost:4000/images/${food.image}`, {
+          setPreview(url + `/images/${food.image}`, {
             headers: {
               Authorization: `Bearer ${token}`
           }});
@@ -107,7 +109,7 @@ const Add = () => {
       }
       if (id) {
         response = await axios.put(
-          `http://localhost:4000/api/food/update/${id}`,
+          url + `/api/food/update/${id}`,
           formData,
           { headers: { "Content-Type": "multipart/form-data",
             Authorization: `Bearer ${token}`,
@@ -115,7 +117,7 @@ const Add = () => {
         );
       } else {
         response = await axios.post(
-          `http://localhost:4000/api/food/add`,
+          url + `/api/food/add`,
           formData,
           { headers: { "Content-Type": "multipart/form-data",
             Authorization: `Bearer ${token}`,

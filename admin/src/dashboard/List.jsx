@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useNavigate } from "react-router-dom";
+import.meta.env.VITE_BACKEND_URL;
 
 const List = () => {
   const [list, setList] = useState([]);
@@ -13,13 +14,14 @@ const List = () => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [selectedItems, setSelectedItems] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
+  const url = import.meta.env.VITE_BACKEND_URL;
 
   const navigate = useNavigate();
 
   const fetchList = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:4000/api/food/list');
+      const response = await axios.get( url + '/api/food/list');
       if (response.data.success) {
         setList(response.data.data);
         setFilteredList(response.data.data);
@@ -36,7 +38,7 @@ const List = () => {
   const deleteItem = async (id) => {
     try {
       console.log(id);
-      const response = await axios.delete(`http://localhost:4000/api/food/delete/${id}`);
+      const response = await axios.delete(url + `/api/food/delete/${id}`);
       if (response.data.success) {
         toast.success(response.data.message);
         await fetchList();
@@ -271,7 +273,7 @@ const handleBulkDelete = async () => {
                       </td>
                       <td className="py-4 px-3 md:px-6">
                         <img
-                          src={`http://localhost:4000/images/${item.image}`}
+                          src={url + `/images/${item.image}`}
                           alt={item.name}
                           className="h-12 w-12 md:h-16 md:w-16 object-cover rounded-lg shadow-sm"
                         />
