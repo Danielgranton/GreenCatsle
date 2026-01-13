@@ -1,0 +1,16 @@
+export const menu = [
+    {id: 1, name: "fruits", image: "/images/fruits.jpeg"},
+    {id: 2, name: "vegetables", image: "/images/vegetables.jpeg"},
+    {id: 3, name: "meat and seafood", image: "/images/sea.jpeg"},
+    {id: 4, name: "snacks and sweets", image: "/images/snacks.jpeg"},
+    {id: 5, name: "beverages", image: "/images/beva.jpeg"},
+    {id:6, name: "bakery",  image: "/images/bakery.jpeg"},
+    {id:7, name: "nuts and dried fruits",  image:"/images/nuts.jpeg"},
+    {id:8, name: "packaged foods",  image:"/images/packed.jpeg"},
+    {id:9, name: "dairy and eggs",  image: "/images/dairyeggs.jpeg"},
+    {id:10, name: "frozen foods",  image:"/images/frozen.jpeg"},
+    {id:11, name: "spices and condiments dishes",  image:"/images/spices.jpeg"}, 
+    {id:12, name: "cooking essentials",  image: "/images/cooking.jpeg"},
+    {id:13, name: "organic and health foods",  image:"/images/organic.jpeg"},
+    {id:14, name: "grains and cereals",  image:"/images/carbos.jpeg"},
+]

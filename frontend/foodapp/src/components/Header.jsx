@@ -9,25 +9,25 @@ const Header = () => {
       id: 1,
       title: "Fresh Meals Delivered",
       desc: "Order from Green Castle and enjoy healthy, hot meals at your doorstep.",
-      image: "/src/assets/a.jpg",
+      image: "/images/a.jpg",
     },
     {
       id: 2,
       title: "Fresh food from Our Kitchen",
       desc: "We deliver anywhere in Nairobi in record time — fresh, hot, and fast!",
-      image: "/src/assets/b.jpg",
+      image: "/images/b.jpg",
     },
     {
       id: 3,
       title: "Affordable Housing",
       desc: "Get amazing deals and discounts every week on your favorite meals.",
-      image: "/src/assets/c.jpg",
+      image: "/images/c.jpg",
     },
     {
       id: 4,
       title: "Fast Delivery On Time",
       desc: "We deliver anywhere in Nairobi and any other place in record time — fresh, hot, and fast!",
-      image: "/src/assets/deliver.jpg",
+      image: "/images/deliver.jpg",
     },
   ];
 
