@@ -1,5 +1,5 @@
 import React from 'react'
-import {menu} from '../data/Menu'
+import {menu} from '../../public/images/menu.js'
 
 const ExploreMenu = ({category, setCategory}) => {
   return (
