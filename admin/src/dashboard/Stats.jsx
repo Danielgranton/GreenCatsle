@@ -24,7 +24,7 @@ const Stats = () => {
         userGrowth: []
     });
     const [loading, setLoading] = useState(true);
-    const url = import.meta.env.VITE_BACKEND_URL
+    const url = import.meta.env.VITE_BACKEND_URL;
 
     useEffect(() => {
         fetchStats();
