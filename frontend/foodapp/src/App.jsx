@@ -9,6 +9,8 @@ import Footer from './components/Footer'
 import LoginForm from './components/LoginForm'
 import { ToastContainer } from 'react-toastify';
 import UserInfo from './components/UserInfo'
+import Scroll from './components/Scroll'
+import ScrollTop from './components/ScrollTop'
 
 const App = () => {
   const [showLogin, setShowLogin] = useState(false)
@@ -16,10 +18,11 @@ const App = () => {
   const [category, setCategory] = useState("All")
   const [showPlaceOrder, setShowPlaceOrder] = useState(false)
 
+
   return (
     <div className="min-h-screen bg-white">
       <ToastContainer />
-
+      <ScrollTop/>
       {showLogin && <LoginForm setShowLogin={setShowLogin} />}
       {showPlaceOrder && <PlaceOrder setShowPlaceOrder={setShowPlaceOrder} />}
       {showSidebar && <UserInfo setShowSidebar={setShowSidebar} />}
