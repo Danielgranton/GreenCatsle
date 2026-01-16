@@ -118,7 +118,7 @@ const Cart = ({ setShowPlaceOrder }) => {
 
     if(!token) {
       toast.error("Please login to place an order");
-      navigate('/login');
+      setShowLogin(true);
       return;
     }
 

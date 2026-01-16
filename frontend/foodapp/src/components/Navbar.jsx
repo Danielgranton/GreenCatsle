@@ -396,7 +396,7 @@ const Navbar = ({setShowLogin, setCategory, category}) => {
                   src="/images/logo.jpeg"
                   alt="User Avatar"
                 />
-                <div>
+                <div className='text-start'>
                   <p className="font-bold text-lg">{user?.name || 'User'}</p>
                   <p className="text-sm opacity-90">{user?.email || 'user@example.com'}</p>
                 </div>
