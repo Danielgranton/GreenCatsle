@@ -20,7 +20,23 @@ const port = process.env.PORT || 4000;
 //middleware
 
 app.use (express.json());
-app.use (cors());
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://green-catsle-6jue.vercel.app"
+];
+
+app.use(cors({
+  origin: function(origin, callback){
+    if(!origin) return callback(null, true); // allow Postman / server requests
+    if(allowedOrigins.indexOf(origin) === -1){
+      const msg = "The CORS policy for this site does not allow access from the specified Origin.";
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+}));
+
 app.use(express.urlencoded({extended: true}));
 //db connection 
 console.log("MONGO_URI:", process.env.MONGO_URI);
