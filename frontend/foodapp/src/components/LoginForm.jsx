@@ -33,22 +33,14 @@ const LoginForm = ({ setShowLogin }) => {
       const response = await axios.post(url + endpoint, data);
 
       if (response && response.data && response.data.success) {
-        const { token } = response.data;
+        const { token,user } = response.data;
 
         // Save token in localStorage
         localStorage.setItem("token", token);
 
-        // Decode token immediately to set user state
-        const decoded = jwtDecode(token);
-        setUser({
-          id: decoded.id,
-          role: decoded.role,
-          name: decoded.name,
-          email: decoded.email
-        });
-
         // Update token state in StoreContext
         setToken(token);
+        setUser(user);
 
         setShowLogin(false);
         toast.success(response.data.message);

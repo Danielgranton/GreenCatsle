@@ -22,11 +22,12 @@ const loginUser = async (req, res) => {
         res.json({
              success: true,
              token,
-             role : user.role,
+             message: "Login successful",
              user : {
                 id : user._id,
                 name : user.name,
-                email : user.email
+                email : user.email,
+                role : user.role
              }
             });
 
@@ -74,14 +75,15 @@ const registerUser = async (req, res) => {
 
         const user = await newUser.save();
         const token = createToken(user);
-        res.json({ 
+        res.json({
             success: true,
              token,
-             role : user.role,
+             message: "User registered successfully",
              user : {
                 id : user._id,
                 name : user.name,
-                email : user.email
+                email : user.email,
+                role : user.role
              }
              });
 
