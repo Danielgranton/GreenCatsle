@@ -3,9 +3,10 @@ import { StoreContext } from "../context/StoreContext";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
 import FoodItem from "../components/FoodItem";
+import { useNavigate } from "react-router-dom";
 
 const Cart = ({ setShowPlaceOrder }) => {
-  const { cartItems, removeFromCart, food_list, addToCart, url, user, recentlyViewed } = useContext(StoreContext);
+  const { cartItems, removeFromCart, food_list, addToCart, url, user, recentlyViewed, setShowLogin } = useContext(StoreContext);
   const [loading, setLoading] = useState(false);
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -20,6 +21,7 @@ const Cart = ({ setShowPlaceOrder }) => {
   const [showPhonePrompt, setShowPhonePrompt] = useState(false);
   const [phoneInput , setPhoneInput] = useState(user?.phone || "");
   const [bounce, setBounce] = useState(false);
+  const navigate = useNavigate();
 
   const getStockStatus = (itemId) => {
     const stock = Math.floor(Math.random() * 50) + 1; // Mock stock data
@@ -57,7 +59,8 @@ const Cart = ({ setShowPlaceOrder }) => {
         setFeeResult(data.data);
         setDeliveryCalculated(true);
         setShowDeliveryModal(false);
-        toast.success("Delivery fee calculated successfully!");
+        toast.success("Delivery fee calculated successfully");
+    
       }
     } catch {
       toast.error("Server error");
@@ -115,6 +118,7 @@ const Cart = ({ setShowPlaceOrder }) => {
 
     if(!token) {
       toast.error("Please login to place an order");
+      navigate('/login');
       return;
     }
 

@@ -5,6 +5,7 @@ import.meta.env.VITE_BACKEND_URL;
 
 export const StoreContext = createContext(null);
 
+
 const StoreContextProvider = (props) => {
 
     const[cartItems, setCartItems] = useState({});
@@ -14,6 +15,7 @@ const StoreContextProvider = (props) => {
     const [food_list, setFoodList] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [recentlyViewed, setRecentlyViewed] = useState([]);
+    const [showLogin, setShowLogin] = useState(false);
 
     // delivery info
 
@@ -70,7 +72,6 @@ const StoreContextProvider = (props) => {
         try {
             const response = await axios.get(
                 url+"/api/cart/get",
-                {},
                 {
                     headers : {
                         Authorization : `Bearer ${token}`
@@ -157,6 +158,8 @@ const StoreContextProvider = (props) => {
         filteredFoodList,
         recentlyViewed,
         addToRecentlyViewed,
+        showLogin,
+        setShowLogin,
     }
 
     return (

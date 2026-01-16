@@ -52,6 +52,7 @@ const App = () => {
           path="/food/:id"
           element={<FoodDetail />}
         />
+        <Route path='/login' element={<LoginForm setShowLogin={setShowLogin} />}/>
       </Routes>
 
       <Footer />

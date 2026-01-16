@@ -8,7 +8,7 @@ const FoodDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { food_list, cartItems, addToCart, removeFromCart, url, addToRecentlyViewed } = useContext(StoreContext);
-  const [quantity, setQuantity] = useState(1);
+  
 
   const item = food_list.find(item => item._id === id);
 
@@ -36,15 +36,10 @@ const FoodDetail = () => {
 
   const similarItems = food_list.filter(food => food.category === item.category && food._id !== id).slice(0, 8);
 
-  const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
-      addToCart(item._id);
-    }
-    setQuantity(1);
-  };
+ 
 
   const handleBuyNow = () => {
-    for (let i = 0; i < quantity; i++) {
+    for (let i = 0; i < cartItems.length; i++) {
       addToCart(item._id);
     }
     navigate('/cart');
@@ -120,26 +115,26 @@ const FoodDetail = () => {
                 <span className="text-lg font-semibold text-gray-700">Quantity:</span>
                 <div className="flex items-center bg-white rounded-full p-1 shadow-sm">
                   <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    onClick={() => removeFromCart(item._id)}
                     className="w-10 h-10 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all duration-300 hover:scale-110 flex items-center justify-center"
                   >
                     <i className="fas fa-minus"></i>
                   </button>
-                  <span className="w-12 text-center font-semibold text-lg">{quantity}</span>
+                  <span className="w-12 text-center font-semibold text-lg">{cartItems[item._id] || 0}</span>
                   <button
-                    onClick={() => setQuantity(quantity + 1)}
+                    onClick={ () => addToCart(item._id) }
                     className="w-10 h-10 bg-green-500 text-white rounded-full hover:bg-green-600 transition-all duration-300 hover:scale-110 flex items-center justify-center"
                   >
                     <i className="fas fa-plus"></i>
                   </button>
                 </div>
                 <p className="text-lg font-semibold text-gray-700">
-                  Total: KSh {item.price * quantity}
+                  Total: KSh {item.price * (cartItems[item._id] || 0)}
                 </p>
               </div>
               <div className="flex gap-4">
                 <button
-                  onClick={handleAddToCart}
+                  onClick={() => addToCart(item._id)}
                   className="flex-1 bg-green-500 text-white py-4 px-6 rounded-xl hover:bg-green-600 transition-all duration-300 hover:scale-105 font-semibold shadow-lg flex items-center justify-center text-lg"
                 >
                   <i className="fas fa-cart-plus mr-2"></i>
