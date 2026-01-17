@@ -204,7 +204,7 @@ const Navbar = ({setShowLogin, setCategory, category}) => {
                   const firstFood = filteredFoodList[0];
                   navigate(`/food/${firstFood._id}`);
                 } else {
-                  toast.error("food not found");
+                  toast.error("food out of stock");
                 }
               }
             }}
@@ -324,7 +324,7 @@ const Navbar = ({setShowLogin, setCategory, category}) => {
                  const firstFood = filteredFoodList[0];
                  navigate(`/food/${firstFood._id}`);
               } else {
-                 toast.error("Food not found")
+                 toast.error("Food out of stock");
               }
             }
           }}
