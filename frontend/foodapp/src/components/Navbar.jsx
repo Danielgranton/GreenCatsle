@@ -1,16 +1,18 @@
 import  { useEffect, useState ,useContext} from 'react'
 import Scroll from './Scroll';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { StoreContext } from '../context/StoreContext';
+import { toast } from 'react-toastify';
 
 
 const Navbar = ({setShowLogin, setCategory, category}) => {
+  const navigate = useNavigate();
   const [isBouncing, setIsBouncing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("header");
-  const { cartItems, token, setToken, setSearchQuery, user, logout } = useContext(StoreContext);
+  const { cartItems, token, setToken, setSearchQuery, user, logout,filteredFoodList } = useContext(StoreContext);
   const [searchTerm, setSearchTerm] = useState("");
  
     
@@ -55,7 +57,7 @@ const Navbar = ({setShowLogin, setCategory, category}) => {
   // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isDropdownOpen && !event.target.closest('.dropdown-container')) {
+      if (isDropdownOpen && !event.target.closest('.dropdown-container') && !event.target.closest('.user-dropdown')) {
         setIsDropdownOpen(false);
       }
     };
@@ -109,7 +111,7 @@ const Navbar = ({setShowLogin, setCategory, category}) => {
   </button>
 
   {showDropdown && (
-    <div   className={`absolute top-13 left-0 w-60 bg-white rounded-b-2xl shadow-2xl 
+    <div   className={`absolute top-13 left-0 w-60 bg-white rounded-b-2xl shadow-2xl
   border border-gray-100 z-30 overflow-hidden
   transform transition-all duration-300 ease-out origin-top
   ${
@@ -195,6 +197,17 @@ const Navbar = ({setShowLogin, setCategory, category}) => {
               setSearchTerm(e.target.value);
               setSearchQuery(e.target.value);
             }}
+
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                if (filteredFoodList.length > 0) {
+                  const firstFood = filteredFoodList[0];
+                  navigate(`/food/${firstFood._id}`);
+                } else {
+                  toast.error("food not found");
+                }
+              }
+            }}
           />
           <i className="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer"></i>
         </div>
@@ -240,7 +253,7 @@ const Navbar = ({setShowLogin, setCategory, category}) => {
 
           {/* Desktop Dropdown Menu */}
           {isDropdownOpen && (
-            <div className='absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-top-2 duration-200 z-80'>
+            <div className='user-dropdown fixed top-16 right-4 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-top-2 duration-300 z-80'>
               <div className='bg-gradient-to-r from-blue-500 to-purple-600 p-4'>
                 <div className='flex items-center gap-3'>
                   <img className='h-8 w-8 rounded-full object-cover border-2 border-white/30' src="/images/logo.jpeg" alt="User Avatar" />
@@ -304,6 +317,17 @@ const Navbar = ({setShowLogin, setCategory, category}) => {
             setSearchTerm(e.target.value)
             setSearchQuery(e.target.value)
           }}
+
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              if (filteredFoodList.length > 0) {
+                 const firstFood = filteredFoodList[0];
+                 navigate(`/food/${firstFood._id}`);
+              } else {
+                 toast.error("Food not found")
+              }
+            }
+          }}
           className="w-full bg-gray-200 text-black font-semibold
           placeholder:text-gray-400 rounded-xl outline-none
           py-3 pl-4 pr-12
@@ -314,7 +338,7 @@ const Navbar = ({setShowLogin, setCategory, category}) => {
     </div>
 
     {/* Sidebar Backdrop */}
-    
+
     {sidebarOpen && (
       <div
         className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -324,7 +348,7 @@ const Navbar = ({setShowLogin, setCategory, category}) => {
 
     {/* Sidebar */}
     <div
-      className={`fixed left-0 top-0 h-full w-80 bg-green-600/95 backdrop-blur-lg text-white z-50 transform transition-transform duration-500 ease-in-out lg:hidden shadow-2xl border-r border-white/20  overflow-scroll scrollbar-hide ${
+      className={`fixed left-0 top-0 h-full w-80 bg-green-600/95 backdrop-blur-lg text-white z-50 transform transition-transform duration-500 ease-in-out lg:hidden shadow-2xl border-r border-white/20 overflow-scroll scrollbar-hide ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
     >
@@ -388,20 +412,72 @@ const Navbar = ({setShowLogin, setCategory, category}) => {
             </button>
           ) : (
             <div className="space-y-4">
-              <div className="dropdown-container">
+              <div className="relative dropdown-container">
               <button onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
-              <div className="flex items-center space-x-4 p-4 bg-white/20 rounded-xl backdrop-blur-sm">
+              <div className="flex flex-col items-center space-x-4 p-4 bg-white/20 rounded-xl backdrop-blur-sm w-68">
+                <div className='flex items-center space-x-4 mb-3 capitalize'>
                 <img
-                  className="h-12 w-12 rounded-full object-cover border-2 border-white/30"
+                  className="h-13 w-13 rounded-full object-cover border-2 border-white/30"
                   src="/images/logo.jpeg"
                   alt="User Avatar"
                 />
-                <div className='text-start'>
-                  <p className="font-bold text-lg">{user?.name || 'User'}</p>
-                  <p className="text-sm opacity-90">{user?.email || 'user@example.com'}</p>
+
+                <p className="font-bold text-lg"> Hi,{user?.name || 'User'}</p>
+                </div>
+                <div className='text-white'>
+                  <p className="text-sm text-black font-semibold opacity-90">{user?.email || 'user@example.com'}</p>
                 </div>
               </div>
               </button>
+
+               {/* Desktop Dropdown Menu */}
+            {isDropdownOpen && (
+              <div  className={`absolute top-full right-0 mt-2 w-60 bg-white rounded-b-2xl shadow-2xl 
+  border border-gray-100 z-30 overflow-hidden
+  transform transition-all duration-300 ease-out origin-top
+  ${
+    showDropdown
+      ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
+      : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
+  }`}>
+                <div className='bg-gradient-to-r from-blue-500 to-purple-600 p-4'>
+                  <div className='flex items-center gap-3'>
+                    <img className='h-8 w-8 rounded-full object-cover border-2 border-white/30' src="/images/logo.jpeg" alt="User Avatar" />
+                    <div className='text-white'>
+                      <h3 className='font-bold text-lg'>{user?.name || 'User'}</h3>
+                      <p className='text-sm opacity-90'>{user?.email || 'user@example.com'}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className='py-2'>
+                  <div className='px-4 py-2 border-b border-gray-100'>
+                    <div className='flex items-center gap-2'>
+                      <div className='w-2 h-2 bg-green-500 rounded-full'></div>
+                      <span className='text-sm text-gray-600 capitalize'> Role : {user?.role || 'user'}</span>
+                    </div>
+                  </div>
+                  <button className='w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors duration-200'>
+                    <svg className='w-5 h-5 text-gray-500' fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span className='font-medium'>Settings</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setIsDropdownOpen(false);
+                    }}
+                    className='w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors duration-200'
+                  >
+                    <svg className='w-5 h-5' fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span className='font-medium'>Logout</span>
+                  </button>
+                </div>
+              </div>
+            )}
               </div>
               <button
                 onClick={() => {
