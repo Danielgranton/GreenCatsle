@@ -22,6 +22,7 @@ const port = process.env.PORT || 4000;
 app.use (express.json());
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:5175",
   "https://green-catsle-6jue.vercel.app"
 ];
 
@@ -34,8 +35,12 @@ app.use(cors({
     }
     return callback(null, true);
   },
+   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
+
+// app.options("*", cors());
 
 app.use(express.urlencoded({extended: true}));
 //db connection 
