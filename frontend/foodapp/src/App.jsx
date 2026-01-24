@@ -16,7 +16,7 @@ const App = () => {
   const [showLogin, setShowLogin] = useState(false)
   const [showSidebar, setShowSidebar] = useState(false)
   const [category, setCategory] = useState("All")
-  const [showPlaceOrder, setShowPlaceOrder] = useState(false)
+  const [showPlaceOrder, setShowPlaceOrder] = useState({ show: false, deliveryFee: 0, deliveryInfo: null })
 
 
   return (
@@ -24,7 +24,7 @@ const App = () => {
       <ToastContainer />
       <ScrollTop/>
       {showLogin && <LoginForm setShowLogin={setShowLogin} />}
-      {showPlaceOrder && <PlaceOrder setShowPlaceOrder={setShowPlaceOrder} />}
+      {showPlaceOrder.show && <PlaceOrder setShowPlaceOrder={setShowPlaceOrder} deliveryFee={showPlaceOrder.deliveryFee} deliveryInfo={showPlaceOrder.deliveryInfo} />}
       {showSidebar && <UserInfo setShowSidebar={setShowSidebar} />}
 
       <Navbar
@@ -53,8 +53,6 @@ const App = () => {
           element={<FoodDetail />}
         />
         <Route path='/login' element={<LoginForm setShowLogin={setShowLogin} />}/>
-
-        <Route path ='/detail:id' element = {<FoodDetail/>}/>
       </Routes>
 
       <Footer />

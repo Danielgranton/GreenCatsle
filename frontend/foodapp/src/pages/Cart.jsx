@@ -375,7 +375,7 @@ const Cart = ({ setShowPlaceOrder }) => {
                     toast.error("Please enter delivery information first");
                     return;
                   }
-                  setShowPlaceOrder(true);
+                  setShowPlaceOrder({ show: true, deliveryFee: feeResult?.fee || 0, deliveryInfo: formData });
                 }}
                 className="w-full bg-green-500 text-white py-4 px-6 rounded-xl hover:bg-green-600 transition-all duration-300 hover:scale-105 font-semibold shadow-lg flex items-center justify-center disabled:opacity-50"
                 disabled={!deliveryCalculated}

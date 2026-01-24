@@ -5,7 +5,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { FaTimes, FaCreditCard, FaMapMarkerAlt, FaPhone, FaUser, FaEnvelope } from 'react-icons/fa';
 
-const PlaceOrder = ({ setShowPlaceOrder, defaultAmount, deliveryFee = 0 }) => {
+const PlaceOrder = ({ setShowPlaceOrder, defaultAmount, deliveryFee = 0, deliveryInfo = null }) => {
   const { cartItems, user, url, food_list } = useContext(StoreContext);
   const [loading, setLoading] = useState(false);
 
@@ -24,11 +24,14 @@ const PlaceOrder = ({ setShowPlaceOrder, defaultAmount, deliveryFee = 0 }) => {
       return sum + qty * item.price;
     }, 0);
 
-    setAmount((total ?? 0) + (deliveryFee ?? 0));
-  }, [cartItems, food_list, deliveryFee, defaultAmount]);
+    setAmount(total ?? 0);
+  }, [cartItems, food_list, defaultAmount]);
 
   const deliveryAddress = "Default Address"; // backend-required
   const notes = "";
+
+  // Calculate display total (items + delivery fee)
+  const displayTotal = amount + (deliveryFee ?? 0);
 
   // --- Validation ---
   const validateOrder = () => {
@@ -76,18 +79,23 @@ const PlaceOrder = ({ setShowPlaceOrder, defaultAmount, deliveryFee = 0 }) => {
       .map(([itemId, qty]) => {
         const item = food_list.find(f => f._id === itemId);
         return {
-          foodId: itemId,
+          id: itemId,
           name: item.name,
           price: item.price,
-          quantity: qty
+          quantity: qty,
+          subtotal: item.price * qty
         };
       });
 
       const response = await axios.post(`${url}/api/orders/place`, {
+        name: user.name,
+        email: user.email,
         phone: formattedPhone,
+
         userId: user._id,
         address: deliveryAddress,
         deliveryAddress,
+        deliveryInfo,
         notes,
         items: items,
         amount: amount,
@@ -103,7 +111,7 @@ const PlaceOrder = ({ setShowPlaceOrder, defaultAmount, deliveryFee = 0 }) => {
 
       toast.success("M-Pesa payment initiated. Please complete the payment on your phone.");
 
-      setShowPlaceOrder(false);
+      setShowPlaceOrder({ show: false, deliveryFee: 0, deliveryInfo: null });
 
     } catch (error) {
 
@@ -122,7 +130,7 @@ const PlaceOrder = ({ setShowPlaceOrder, defaultAmount, deliveryFee = 0 }) => {
         <motion.div
           key="overlay"
           className='fixed inset-0  backdrop-blur-sm z-40'
-          onClick={() => setShowPlaceOrder(false)}
+          onClick={() => setShowPlaceOrder({ show: false, deliveryFee: 0, deliveryInfo: null })}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -174,7 +182,7 @@ const PlaceOrder = ({ setShowPlaceOrder, defaultAmount, deliveryFee = 0 }) => {
             {/* Total Amount */}
             <div className='w-full mb-4 flex justify-between p-2 bg-gray-200 rounded-lg'>
               <span className='font-bold'>Total:</span>
-              <span className='text-green-600 font-bold'>Ksh {amount}</span>
+              <span className='text-green-600 font-bold'>Ksh {displayTotal.toFixed(2)}</span>
             </div>
 
             {/* Phone input */}
@@ -202,7 +210,7 @@ const PlaceOrder = ({ setShowPlaceOrder, defaultAmount, deliveryFee = 0 }) => {
 
             <button
               type="button"
-              onClick={() => setShowPlaceOrder(false)}
+              onClick={() => setShowPlaceOrder({ show: false, deliveryFee: 0, deliveryInfo: null })}
               className='rounded-lg p-3 outline-none bg-red-500 w-full text-sm sm:text-base font-bold hover:bg-red-700 duration-300'
             >
               Cancel

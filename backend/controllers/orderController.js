@@ -259,7 +259,7 @@ export const placeOrder = async (req, res) => {
             // update order with Mpesa reference
             await orderModel.findByIdAndUpdate(
                 {
-                mpesaReference: stkCallback.CheckoutRequestID
+                mpesaReference: stkResponse.data.CheckoutRequestID
                 },
                 {
                     paymentStatus : "paid",
