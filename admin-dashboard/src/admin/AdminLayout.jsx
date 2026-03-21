@@ -79,16 +79,16 @@ const AdminLayout = () => {
 
   const navItems = React.useMemo(
     () => [
-      { path: "/admin", icon: LayoutDashboard, label: "Overview" },
-      { path: "/admin/orders", icon: ShoppingBag, label: "Orders" },
-      { path: "/admin/job-applications", icon: FileText, label: "Job Applications" },
-      { path: "/admin/menu", icon: MenuIcon, label: "Menu" },
-      { path: "/admin/adverts", icon: Megaphone, label: "Adverts" },
-      { path: "/admin/wallet", icon: Wallet, label: "Wallet" },
-      { path: "/admin/payouts", icon: DollarSign, label: "Payouts" },
-      { path: "/admin/complaints", icon: MessageSquare, label: "Complaints" },
-      { path: "/admin/reviews", icon: Star, label: "Reviews" },
-      { path: "/admin/settings", icon: Settings, label: "Settings" },
+      { path: "/admin", icon: LayoutDashboard, label: "Overview" ,className: 'text-orange-400' },
+      { path: "/admin/orders", icon: ShoppingBag, label: "Orders", className: 'text-green-300' },
+      { path: "/admin/job-applications", icon: FileText, label: "Job Applications" , className: 'text-amber-800' },
+      { path: "/admin/menu", icon: MenuIcon, label: "Menu", className: 'text-amber-500' },
+      { path: "/admin/adverts", icon: Megaphone, label: "Adverts" , className: 'text-pink-700' },
+      { path: "/admin/wallet", icon: Wallet, label: "Wallet" ,className: 'text-green-700' },
+      { path: "/admin/payouts", icon: DollarSign, label: "Payouts", className: 'text-blue-700' },
+      { path: "/admin/complaints", icon: MessageSquare, label: "Complaints", className: 'text-indigo-300' },
+      { path: "/admin/reviews", icon: Star, label: "Reviews" , className: 'text-indigo-500' },
+      { path: "/admin/settings", icon: Settings, label: "Settings" , className: 'text-amber-500' },
     ],
     []
   );
@@ -362,12 +362,12 @@ const AdminLayout = () => {
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-green-50 border-r border-gray-300 transform transition-transform duration-200 lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b border-gray-300">
             <div className="flex flex-col items-center justify-between mb-4">
               <img src="/systemlogo.png" alt="logo" className="w-60 h-60 -mt-25 -ml-5 -mb-20" />
               <h1 className="text-xl font-semibold text-gray-900">Control Room</h1>
@@ -379,7 +379,7 @@ const AdminLayout = () => {
               </button>
             </div>
 
-            <div className="w-full p-3 bg-gray-50 rounded-lg">
+            <div className="w-full p-3 bg-gray-200 rounded-lg">
               <span className="text-sm font-medium text-gray-900">Business Admin</span>
               <div className="mt-3 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl overflow-hidden bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
@@ -419,7 +419,7 @@ const AdminLayout = () => {
                         isActive ? "bg-gray-900 text-white" : "text-gray-700 hover:bg-gray-100"
                       }`}
                     >
-                      <item.icon className="w-5 h-5" />
+                      <item.icon className={`w-5 h-5 font-bold ${item.className || "text-gray-500"}`} />
                       <span className="text-sm font-medium">{item.label}</span>
                     </Link>
                   </li>
@@ -436,7 +436,7 @@ const AdminLayout = () => {
               }}
               className="mt-2 mb-5 flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 bg-red-200 hover:bg-red-300 w-full"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-5 h-5 text-red-600"  />
               <span className="text-sm font-medium">Logout</span>
             </button>
           </nav>
@@ -445,7 +445,7 @@ const AdminLayout = () => {
 
       {/* Main */}
       <div className="flex-1 flex flex-col lg:ml-64">
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <header className="bg-white border-b border-gray-300 px-6 py-4 shadow-lg">
           <div className="flex items-center justify-between">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -458,7 +458,7 @@ const AdminLayout = () => {
               <input
                 type="date"
                 defaultValue={todayValue}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                className="px-4 py-2 border border-orange-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-900"
               />
             </div>
 

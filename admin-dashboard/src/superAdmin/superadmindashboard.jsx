@@ -51,13 +51,13 @@ export default function SuperAdminDashboard() {
   const [avatarUrl, setAvatarUrl] = useState('');
 
   const superAdminNavItems = [
-    { path: '/superadmin/platform', icon: LayoutDashboard, label: 'Platform Overview' },
-    { path: '/superadmin/businesses', icon: Building2, label: 'Business Applications' },
-    { path: '/superadmin/business-management', icon: MapPin, label: 'Business Management' },
-    { path: '/superadmin/system-wallet', icon: Wallet, label: 'System Wallet' },
-    { path: '/superadmin/payout-approvals', icon: DollarSign, label: 'Payout Approvals' },
-    { path: '/superadmin/all-complaints', icon: MessageSquare, label: 'All Complaints' },
-    { path: '/superadmin/webhook-health', icon: Activity, label: 'Webhook Health' },
+    { path: '/superadmin/platform', icon: LayoutDashboard, label: 'Platform Overview' ,className: 'text-orange-400' },
+    { path: '/superadmin/businesses', icon: Building2, label: 'Business Applications', className: 'text-green-300' },
+    { path: '/superadmin/business-management', icon: MapPin, label: 'Business Management', className: 'text-green-700' },
+    { path: '/superadmin/system-wallet', icon: Wallet, label: 'System Wallet', className: 'text-blue-700' },
+    { path: '/superadmin/payout-approvals', icon: DollarSign, label: 'Payout Approvals', className: 'text-pink-700' },
+    { path: '/superadmin/all-complaints', icon: MessageSquare, label: 'All Complaints' ,className: 'text-indigo-300' },
+    { path: '/superadmin/webhook-health', icon: Activity, label: 'Webhook Health', className: 'text-amber-500' },
   ];
 
   const navItems = superAdminNavItems;
@@ -225,14 +225,14 @@ export default function SuperAdminDashboard() {
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-green-50 border-r border-gray-300 transform transition-transform duration-200 lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full ">
           {/* Logo & Role Switcher */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex flex-col items-center justify-between mb-4">
+          <div className="p-6 border-b border-gray-500 ">
+            <div className="flex flex-col items-center justify-between mb-4 ">
                  <img src="/systemlogo.png" alt="logo" className="w-60 h-60 -mt-25 -ml-5 -mb-20" />
               <h1 className="text-xl font-semibold text-gray-900">Control Room</h1>
               <button
@@ -243,7 +243,7 @@ export default function SuperAdminDashboard() {
               </button>
             </div>
             
-            <div className="w-full p-3 bg-gray-50 rounded-lg">
+            <div className="w-full p-3 bg-gray-200 rounded-lg">
               <span className="text-sm font-medium text-gray-900">Super Admin</span>
               <div className="text-xs text-gray-600 mt-1">Platform control</div>
             </div>
@@ -265,7 +265,7 @@ export default function SuperAdminDashboard() {
                           : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      <item.icon className="w-5 h-5" />
+                      <item.icon className={`w-5 h-5 font-bold ${item.className || "text-gray-400"}`} />
                       <span className="text-sm font-medium">{item.label}</span>
                     </Link>
                   </li>
@@ -279,9 +279,9 @@ export default function SuperAdminDashboard() {
                 localStorage.removeItem('token');
                 window.location.reload();
               }}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 bg-red-200 hover:bg-red-300 w-full"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 bg-red-200 hover:bg-red-300 w-full mt-4"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-5 h-5 text-red-600" />
               <span className="text-sm font-medium">Logout</span>
             </button>
           </nav>
@@ -291,7 +291,7 @@ export default function SuperAdminDashboard() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:ml-64">
         {/* Top Bar */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <header className="bg-white border-b border-gray-300 px-6 py-4 shadow-sm">
           <div className="flex items-center justify-between">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -304,7 +304,7 @@ export default function SuperAdminDashboard() {
               <input
                 type="date"
                 defaultValue={todayValue}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                className="px-4 py-2 border border-orange-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 "
               />
             </div>
 
@@ -317,13 +317,13 @@ export default function SuperAdminDashboard() {
                     setNotificationsOpen(next);
                     if (next) void loadNotifications({ includeRead: false });
                   }}
-                  className="relative p-2 hover:bg-gray-100 rounded-lg"
+                  className="relative p-2 hover:bg-gray-100 rounded-lg "
                 >
-                  <Bell className="w-5 h-5 text-gray-600" />
+                  <Bell className="w-5 h-5 text-red-600" />
                   {unreadCount > 0 ? (
                     <>
-                      <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                      <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-red-600 text-white text-[10px] font-semibold flex items-center justify-center">
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></span>
+                      <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-green-600 text-white text-[10px] font-semibold flex items-center justify-center">
                         {unreadCount > 99 ? '99+' : unreadCount}
                       </span>
                     </>
@@ -334,7 +334,7 @@ export default function SuperAdminDashboard() {
                   <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                     <div className="p-4 border-b border-gray-200">
                       <div className="flex items-center justify-between gap-3">
-                        <h3 className="font-semibold text-gray-900">Notifications</h3>
+                        <h3 className="font-semibold text-orange-400">Notifications</h3>
                         <button
                           type="button"
                           onClick={markAllRead}
