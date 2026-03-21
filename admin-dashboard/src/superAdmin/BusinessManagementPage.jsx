@@ -44,6 +44,14 @@ const signUrl = async ({ token, key }) => {
   return data.url || null;
 };
 
+const defaultIcon = L.icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
 const statusBadge = (status) => {
   const base = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border";
   if (status === "active") return `${base} bg-emerald-50 text-emerald-700 border-emerald-200`;
@@ -240,7 +248,7 @@ export default function BusinessManagementPage() {
                   <Marker
                     key={b._id}
                     position={position}
-                    icon={makeLogoPinIcon({ logoUrl, selected: isSelected }) || undefined}
+                    icon={makeLogoPinIcon({ logoUrl, selected: isSelected }) || defaultIcon}
                     eventHandlers={{
                       click: () => setSelectedId(String(b._id)),
                     }}
