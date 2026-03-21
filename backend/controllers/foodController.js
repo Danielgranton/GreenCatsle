@@ -1,19 +1,23 @@
 
 import foodModel from "../models/foodModel.js";
-import path from "path";
-import fs from "fs";
+import { deleteObject, makeObjectKey, putObject } from "../services/storageService.js";
 
 // add food items
 const addFood = async (req, res) => {
 
-    let image_filename = `${req.file.filename}`;
+    if (!req.file?.buffer) {
+      return res.status(400).json({ success: false, message: "Image is required" });
+    }
+
+    const key = makeObjectKey({ folder: "food", originalName: req.file.originalname });
+    await putObject({ buffer: req.file.buffer, contentType: req.file.mimetype, key });
 
     const food = new foodModel({
         name : req.body.name,
         description : req.body.description,
         price : req.body.price,
         category : req.body.category,
-        image : image_filename,
+        image : key,
     })
 
     try {
@@ -52,13 +56,8 @@ const removeFood = async (req, res) => {
       return res.status(404).json({ success: false, message: "Food not found" });
     }
 
-    // 2. Delete image file safely (check if it exists first)
-    const imagePath = path.join("uploads", food.image);
-    if (fs.existsSync(imagePath)) {
-      fs.unlink(imagePath, (err) => {
-        if (err) console.error("Error deleting image:", err);
-      });
-    }
+    // 2. Delete stored image (S3 or local)
+    if (food.image) await deleteObject({ key: food.image });
 
     // 3. Delete food document
     await foodModel.findByIdAndDelete(id);
@@ -88,20 +87,13 @@ const updateFood = async (req,res) => {
     }
 
     // if user uploads new image
-    let image_filename = food.image; //default: keep old image
+    let imageKey = food.image; //default: keep old image
 
-    if (req.file){
-      // delete the old image
-      const oldImagePath = path.join("uploads", food.image);
-      if (fs.existsSync(oldImagePath)) {
-        fs.unlink(oldImagePath, (err) => {
-          if (err) console.log("Error in deleting old image:", err);
-        });
-      }
-
-      // set the new one
-
-      image_filename = req.file.filename;
+    if (req.file?.buffer){
+      const newKey = makeObjectKey({ folder: "food", originalName: req.file.originalname });
+      await putObject({ buffer: req.file.buffer, contentType: req.file.mimetype, key: newKey });
+      if (food.image) await deleteObject({ key: food.image });
+      imageKey = newKey;
     }
 
     // update fields
@@ -112,7 +104,7 @@ const updateFood = async (req,res) => {
         description:req.body.description,
         price:req.body.price,
         category:req.body.category,
-        image:image_filename,
+        image:imageKey,
       },
 
       {new: true} // return updated data

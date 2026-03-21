@@ -12,32 +12,44 @@ export const connectDB = async () => {
         await mongoose.connect(uri);
         console.log("MongoDB connected successfully");
 
-        //check if the  super admin exists
-        const superAdminEmail = "granton@gmail.com";
-        let admin = await userModel.findOne({
+        // Optional superadmin bootstrap. Disable unless explicitly configured.
+        const superAdminEmail =
+          process.env.SUPERADMIN_EMAIL || process.env.SUPER_ADMIN_EMAIL;
+        const superAdminPassword =
+          process.env.SUPERADMIN_PASSWORD || process.env.SUPER_ADMIN_PASSWORD;
+
+        if (!superAdminEmail || !superAdminPassword) {
+            console.log(
+              "SUPERADMIN_EMAIL/SUPERADMIN_PASSWORD not set; skipping superadmin bootstrap."
+            );
+            return;
+        }
+
+        //check if the super admin exists
+        let superAdmin = await userModel.findOne({
             email : superAdminEmail,
         });
 
-        if(!admin) {
+        if(!superAdmin) {
             const bcrypt = await import("bcrypt");
             const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash("123456789", salt);
+            const hashedPassword = await bcrypt.hash(superAdminPassword, salt);
 
-            admin = await userModel.create({
+            superAdmin = await userModel.create({
                 name : "granton",
                 email : superAdminEmail,
                 password : hashedPassword,
-                role : "admin"
+                role : "superadmin"
             });
 
-            console.log("Super Admin created successfully", admin.email);
+            console.log("Super Admin created successfully", superAdmin.email);
         } else {
 
-            if(admin.role !== "admin") {
-                admin.role = "admin";
-                await admin.save();
+            if(superAdmin.role !== "superadmin") {
+                superAdmin.role = "superadmin";
+                await superAdmin.save();
 
-                console.log("Existing user updated to admin:", admin.email);
+                console.log("Existing user updated to superadmin:", superAdmin.email);
             } else {
                 console.log("Super admin already exists")
             } 

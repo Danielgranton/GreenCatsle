@@ -1,19 +1,22 @@
 import express from "express";
-import { getOrders, placeOrder, mpesaCallback, getOrderStats, deleteOrder } from "../controllers/orderController.js";
-import authMiddleware from "../middleware/auth.js";
-import { verifyAdmin } from "../middleware/verifyAdmin.js";
+import { placeOrder, updateOrderStatus, getUserOrders, getBusinessOrders } from "../controllers/orderController.js";
+import authMiddleware from "../middleware/authMiddleware.js";
+import { validateBody } from "../middleware/validate.js";
 
-const orderRouter = express.Router();
+const router = express.Router();
 
-// Admin routes
-orderRouter.get("/get", verifyAdmin, getOrders);
-orderRouter.get("/stats", verifyAdmin, getOrderStats);
-orderRouter.delete("/:id", verifyAdmin,deleteOrder);
+router.post(
+  "/",
+  authMiddleware,
+  validateBody({
+    businessId: { type: "objectIdLike" },
+    deliveryAddress: { type: "nonEmptyString" },
+    totalAmount: { type: "number" },
+  }),
+  placeOrder
+);
+router.patch("/:orderId", authMiddleware, updateOrderStatus);
+router.get("/user", authMiddleware, getUserOrders);
+router.get("/business/:businessId", authMiddleware, getBusinessOrders);
 
-// User routes
-orderRouter.post("/place", authMiddleware, placeOrder);
-
-// Payment callback (public)
-orderRouter.post("/callback", mpesaCallback);
-
-export default orderRouter;
+export default router;

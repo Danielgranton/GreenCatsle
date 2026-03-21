@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/* Leaflet divIcon reset (we render our own HTML) */
+.gc-leaflet-icon {
+  background: transparent !important;
+  border: none !important;
+}
