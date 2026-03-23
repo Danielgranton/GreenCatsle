@@ -1,18 +1,11 @@
 import React from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
+import { defaultIcon } from "../lib/leafletConfig";
 
 const API_BUSINESS = "http://localhost:4000/api/business";
 const API_SETTINGS = "http://localhost:4000/api/business-settings";
 const API_MEDIA = "http://localhost:4000/api/media";
-
-const defaultIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
 
 const safeAttr = (value) =>
   String(value || "")

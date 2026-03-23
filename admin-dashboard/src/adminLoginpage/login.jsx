@@ -117,7 +117,7 @@ const Login = () => {
         {/* Main */}
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
           {/* Left info */}
-          <motion.div variants={itemVariants} className="space-y-6">
+          <motion.div variants={itemVariants} className="space-y-6 flex flex-col justify-between">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -158,6 +158,49 @@ const Login = () => {
                   Multi-level access control
                 </li>
               </ul>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 mt-auto">
+              <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-200 p-5 text-sm text-slate-700 space-y-2">
+                <p className="font-semibold text-gray-900">Drivers</p>
+                <p className="text-xs text-gray-500">
+                  Approved drivers log in here. Applicants can submit or track their application using the buttons.
+                </p>
+                <div className="flex gap-2">
+                  <a
+                    href="/driver/apply"
+                    className="flex-1 rounded-xl border border-emerald-600 px-3 py-1 text-center text-xs font-semibold text-emerald-600 hover:bg-emerald-600 hover:text-white transition"
+                  >
+                    Apply as driver
+                  </a>
+                  <a
+                    href="/driver/apply"
+                    className="flex-1 rounded-xl border border-emerald-600 px-3 py-1 text-center text-xs font-semibold text-emerald-600 hover:bg-emerald-600 hover:text-white transition"
+                  >
+                    Check status
+                  </a>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-slate-700 space-y-2">
+                <p className="font-semibold text-gray-900">Business applicants</p>
+                <p className="text-xs text-gray-500">
+                  Users applying for a business account can quickly jump to the form or review their application status.
+                </p>
+                <div className="flex gap-2">
+                  <a
+                    href="/apply"
+                    className="flex-1 rounded-xl border border-emerald-600 px-3 py-1 text-center text-xs font-semibold text-emerald-600 hover:bg-emerald-600 hover:text-white transition"
+                  >
+                    Apply as admin
+                  </a>
+                  <a
+                    href="/apply/status"
+                    className="flex-1 rounded-xl border border-emerald-600 px-3 py-1 text-center text-xs font-semibold text-emerald-600 hover:bg-emerald-600 hover:text-white transition"
+                  >
+                    Check status
+                  </a>
+                </div>
+              </div>
             </div>
           </motion.div>
 
@@ -281,18 +324,10 @@ const Login = () => {
                     )}
                   </motion.button>
 
-                  <div className="pt-3 border-t border-gray-400 flex items-center justify-between">
-                
-
-                       <p className='text-sm text-blue-500'>Don&apos;t have business admin access?</p>
-                      <button
-                        type="button"
-                        onClick={() => navigate('/apply')}
-                        className="text-black hover:text-emerald-800 font-semibold text-sm flex items-center gap-1 bg-green-200 hover:bg-green-300 py-2 px-4 rounded-xl transition-all"
-                      >
-                        Apply for approval
-                      </button>
-                     
+                  <div className="pt-3 border-t border-gray-400">
+                    <p className="text-sm text-blue-500">
+                      Need a business account? Use the cards on the left to apply or track your status—the quick links keep everything centralized.
+                    </p>
                   </div>
                 </form>
               </div>

@@ -1,6 +1,7 @@
 import React from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
+import { defaultIcon } from "../lib/leafletConfig";
 
 const API_BASE = "http://localhost:4000/api/superadmin";
 const API_MEDIA = "http://localhost:4000/api/media";
@@ -43,14 +44,6 @@ const signUrl = async ({ token, key }) => {
   if (!resp.ok || !data?.success) return null;
   return data.url || null;
 };
-
-const defaultIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
 
 const statusBadge = (status) => {
   const base = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border";

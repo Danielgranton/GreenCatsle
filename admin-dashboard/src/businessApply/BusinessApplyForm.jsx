@@ -1,17 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
-import L from "leaflet";
+import { defaultIcon } from "../lib/leafletConfig";
 
 const API_BASE = 'http://localhost:4000/api/business-applications';
-
-const defaultIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
 
 const LocationPicker = ({ onPick }) => {
   useMapEvents({

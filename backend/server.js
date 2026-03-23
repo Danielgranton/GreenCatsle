@@ -32,6 +32,7 @@ import menuHierarchyRouter from "./routes/menuHierarchyRoute.js";
 import menuItemRouter from "./routes/menuItemRoute.js";
 import menuMediaRouter from "./routes/menuMediaRoute.js";
 import businessSettingsRouter from "./routes/businessSettingsRoute.js";
+import driverApplicationRouter from "./routes/driverApplicationRoute.js";
 import jobApplicationRouter from "./routes/jobApplicationRoute.js";
 
 const app = express();
@@ -57,7 +58,7 @@ const server = http.createServer(app);
 export const io = new Server(server, {
   cors : {
     origin: "http://localhost:5173",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
   }
@@ -130,7 +131,7 @@ app.use(
       if (isDev && isLocalhostOrigin(origin)) return callback(null, true);
       return callback(null, false);
     },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
@@ -173,6 +174,7 @@ app.use("/api/menu-hierarchy", menuHierarchyRouter);
 app.use("/api/menu-items", menuItemRouter);
 app.use("/api/menu-media", menuMediaRouter);
 app.use("/api/business-settings", businessSettingsRouter);
+app.use("/api/driver-applications", driverApplicationRouter);
 
 
 app.get("/", ( req, res) => {

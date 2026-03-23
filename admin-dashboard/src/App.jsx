@@ -26,6 +26,10 @@ import AdminOrdersPage from './admin/AdminOrdersPage.jsx';
 import AdminMenuPage from './admin/AdminMenuPage.jsx';
 import AdminSettingsPage from './admin/AdminSettingsPage.jsx';
 import JobBoardPage from './jobs/JobBoardPage.jsx';
+import DriverLayout from './driver/DriverLayout.jsx';
+import DriverDashboardPage from './driver/DriverDashboardPage.jsx';
+import DriverApplyPage from './driver/DriverApplyPage.jsx';
+import DriverApplicationsPage from './superAdmin/DriverApplicationsPage.jsx';
 
 
 const App = () => {
@@ -35,6 +39,7 @@ const App = () => {
       <Route path="/login" element={<Login />} />
 
       <Route path="/jobs" element={<JobBoardPage />} />
+      <Route path="/driver/apply" element={<DriverApplyPage />} />
 
       <Route
         path="/apply"
@@ -44,6 +49,17 @@ const App = () => {
       />
 
       <Route path="/apply/status" element={<ApplicationStatus />} />
+
+      <Route
+        path="/driver"
+        element={
+          <ProtectedRoute allowedRoles={["driver"]} redirectTo="/login">
+            <DriverLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<DriverDashboardPage />} />
+      </Route>
 
       <Route
         path="/admin"
@@ -79,6 +95,7 @@ const App = () => {
         <Route path="businesses" element={<BusinessApplicationsPage />} />
         <Route path="business-management" element={<BusinessManagementPage />} />
         <Route path="account" element={<AccountPage />} />
+        <Route path="driver-applications" element={<DriverApplicationsPage />} />
         <Route path="system-wallet" element={<SystemWalletPage />} />
         <Route path="payout-approvals" element={<PayoutApprovalsPage />} />
         <Route path="all-complaints" element={<AllComplaintsPage />} />

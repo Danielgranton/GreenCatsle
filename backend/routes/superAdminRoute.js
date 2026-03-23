@@ -15,6 +15,7 @@ import {
   adminSetUserRole,
   adminSetUserStatus,
 } from "../controllers/superAdminController.js";
+import { listDriverApplications, reviewDriverApplication } from "../controllers/driverApplicationController.js";
 
 const router = express.Router();
 
@@ -35,6 +36,9 @@ router.patch("/businesses/:businessId/status", adminSetBusinessStatus);
 router.get("/reviews", adminListReviews);
 
 router.get("/webhook-events", adminListWebhookEvents);
+
+router.get("/driver-applications", listDriverApplications);
+router.patch("/driver-applications/:applicationId", reviewDriverApplication);
 
 router.patch("/users/:userId/role", adminSetUserRole);
 router.patch("/users/:userId/status", adminSetUserStatus);

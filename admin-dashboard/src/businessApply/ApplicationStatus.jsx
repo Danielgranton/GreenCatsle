@@ -42,18 +42,18 @@ const ApplicationStatus = () => {
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-10">
       <div className="w-full max-w-3xl mx-auto space-y-4">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 bg-green-200 rounded-lg p-3">
           <div className="flex items-center gap-3">
-            <img src="/systemlogo.png" alt="logo" className="w-60 h-60 -mt-20 -mb-20 object-contain" />
+            <img src="/systemlogo.png" alt="logo" className="w-60 h-60 -mt-30 -mb-30 object-contain" />
             <div>
               <h1 className="text-lg font-semibold text-gray-900">Application status</h1>
-              <p className="text-sm text-gray-600">Check if your application is pending, approved, or rejected.</p>
+              <p className="text-sm text-gray-500">Check if your application is pending, approved, or rejected.</p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => navigate("/apply")}
-            className="h-10 px-4 rounded-xl bg-green-200 hover:bg-green-300 text-black text-sm font-semibold"
+            className="h-10 px-4 rounded-xl bg-orange-200 hover:bg-orange-300 text-black text-sm font-semibold"
           >
             Back
           </button>

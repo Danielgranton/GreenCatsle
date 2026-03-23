@@ -5,7 +5,7 @@ import { LogOut } from 'lucide-react';
 import {
   LayoutDashboard,
   Menu as MenuIcon,
-  Wallet, 
+  Wallet,
   DollarSign,
   MessageSquare,
   Bell,
@@ -13,6 +13,7 @@ import {
   Activity,
   X,
   MapPin,
+  Shield,
 } from 'lucide-react';
 
 const NOTIFICATIONS_BASE = 'http://localhost:4000/api/notifications';
@@ -56,7 +57,8 @@ export default function SuperAdminDashboard() {
     { path: '/superadmin/business-management', icon: MapPin, label: 'Business Management', className: 'text-green-700' },
     { path: '/superadmin/system-wallet', icon: Wallet, label: 'System Wallet', className: 'text-blue-700' },
     { path: '/superadmin/payout-approvals', icon: DollarSign, label: 'Payout Approvals', className: 'text-pink-700' },
-    { path: '/superadmin/all-complaints', icon: MessageSquare, label: 'All Complaints' ,className: 'text-indigo-300' },
+    { path: '/superadmin/all-complaints', icon: MessageSquare, label: 'All Complaints', className: 'text-indigo-300' },
+    { path: '/superadmin/driver-applications', icon: Shield, label: 'Driver Applications', className: 'text-fuchsia-400' },
     { path: '/superadmin/webhook-health', icon: Activity, label: 'Webhook Health', className: 'text-amber-500' },
   ];
 
@@ -499,7 +501,7 @@ export default function SuperAdminDashboard() {
       {/* Sidebar Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/.1 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
