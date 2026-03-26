@@ -1,13 +1,13 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import { BrouserRouter } from 'react-router-dom'
-import App from './App'
+import App from './App.jsx'
+import { BrowserRouter } from 'react-router-dom'
+import "leaflet/dist/leaflet.css";
+import "./lib/leafletConfig";
 
 createRoot(document.getElementById('root')).render(
- 
-    <BrouserRouter>
-      <App />
-    </BrouserRouter>
-  
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>
 )
