@@ -21,9 +21,10 @@ const API_BUSINESS = "http://localhost:4000/api/business";
 const API_MEDIA = "http://localhost:4000/api/media";
 const NOTIFICATIONS_BASE = "http://localhost:4000/api/notifications";
 
-const signUrl = async ({ token, key }) => {
+const signUrl = async ({ token, key, provider }) => {
   if (!key) return "";
-  const resp = await fetch(`${API_MEDIA}/signed?key=${encodeURIComponent(key)}&expiresInSeconds=600`, {
+  const p = encodeURIComponent(provider || "");
+  const resp = await fetch(`${API_MEDIA}/signed?key=${encodeURIComponent(key)}&provider=${p}&expiresInSeconds=600`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await resp.json();
@@ -103,7 +104,7 @@ const AdminLayout = () => {
       const data = await resp.json();
       if (!resp.ok || !data?.success || !data?.business) return;
       const b = data.business;
-      const signed = await signUrl({ token, key: b?.logo?.key || "" });
+      const signed = await signUrl({ token, key: b?.logo?.key || "", provider: b?.logo?.provider });
       setBusinessSummary({
         name: b?.name || "",
         address: b?.address || "",

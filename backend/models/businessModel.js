@@ -77,6 +77,21 @@ const businessSchema = new mongoose.Schema({
         type : String,
         enum : ['active', 'inactive'],
         default : 'active'
+    },
+
+    approvedAt: {
+        type: Date,
+        default: null
+    },
+
+    trialStartedAt: {
+        type: Date,
+        default: null
+    },
+
+    trialEndsAt: {
+        type: Date,
+        default: null
     }
 }, {timestamps : true});
 

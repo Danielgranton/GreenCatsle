@@ -8,6 +8,7 @@ import { payWithMpesa } from "../services/mpesaService.js";
 import { payWithPaypal } from "../services/paypalService.js";
 import { payWithCard } from "../services/cardService.js";
 import { createNotification } from "../services/notificationService.js";
+import { isBusinessInFreeTrial } from "../services/trialService.js";
 
 export const advertUpload = multer({ storage: multer.memoryStorage() }).single("media");
 
@@ -44,8 +45,17 @@ export const createAdvert = async (req, res) => {
       return res.status(400).json({ success: false, message: "Only image/* or video/* is allowed" });
     }
 
+    const note = typeof req.body?.note === "string" ? req.body.note.trim() : "";
+    if (!note) {
+      return res.status(400).json({ success: false, message: "note is required" });
+    }
+
     const key = makeObjectKey({ folder: `adverts/${businessId}`, originalName: req.file.originalname });
     const stored = await putObject({ buffer: req.file.buffer, contentType: req.file.mimetype, key });
+
+    const isTrial = isBusinessInFreeTrial(business);
+    const priceAmount = isTrial ? 0 : 2500;
+    const status = isTrial ? "active" : "pending_payment";
 
     const advert = await Advert.create({
       businessId,
@@ -54,10 +64,11 @@ export const createAdvert = async (req, res) => {
       media: { key: stored.key, provider: stored.provider, contentType: req.file.mimetype },
       durationSeconds: 10,
       currency: "KES",
-      priceAmount: 2500,
-      status: "pending_payment",
+      priceAmount,
+      status,
+      paidAt: isTrial ? new Date() : null,
       title: typeof req.body?.title === "string" ? req.body.title : "",
-      note: typeof req.body?.note === "string" ? req.body.note : "",
+      note,
     });
 
     res.status(201).json({ success: true, advert });
@@ -94,6 +105,14 @@ export const payAdvertFee = async (req, res) => {
     const advert = await Advert.findOne({ _id: advertId, businessId });
     if (!advert) return res.status(404).json({ success: false, message: "Advert not found" });
     if (advert.status === "active") return res.status(200).json({ success: true, advert });
+
+    // Free-trial: no ads fee required.
+    if (advert.priceAmount === 0 || isBusinessInFreeTrial(business)) {
+      advert.status = "active";
+      advert.paidAt = new Date();
+      await advert.save();
+      return res.status(200).json({ success: true, advert });
+    }
 
     const payment = new Payment({
       orderId: null,
@@ -137,16 +156,43 @@ export const getAdsFeed = async (req, res) => {
     const limit = Math.min(30, Math.max(1, Number(req.query?.limit || 10)));
     const adverts = await Advert.find({ status: "active" }).sort({ createdAt: -1 }).limit(limit);
 
+    const absolutizeLocalUrl = (url) => {
+      if (typeof url !== "string" || !url.startsWith("/images/")) return url;
+      const base = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get("host")}`;
+      return `${base}${url}`;
+    };
+
+    const businessIds = Array.from(new Set(adverts.map((a) => String(a.businessId)).filter(Boolean)));
+    const businesses = await Business.find({ _id: { $in: businessIds } }).select(
+      "name category address location logo"
+    );
+    const businessMap = new Map(businesses.map((b) => [String(b._id), b]));
+
     const items = await Promise.all(
       adverts.map(async (ad) => {
-        const mediaUrl = await getSignedGetUrl({ key: ad.media.key, expiresInSeconds: 120 });
+        const business = businessMap.get(String(ad.businessId)) || null;
+        const mediaUrl = await getSignedGetUrl({ key: ad.media.key, provider: ad.media.provider, expiresInSeconds: 120 });
+        const logoUrl = business?.logo?.key
+          ? absolutizeLocalUrl(await getSignedGetUrl({ key: business.logo.key, provider: business.logo.provider, expiresInSeconds: 600 }))
+          : null;
         return {
           id: String(ad._id),
           businessId: String(ad.businessId),
           mediaType: ad.mediaType,
-          mediaUrl,
+          mediaUrl: absolutizeLocalUrl(mediaUrl),
           durationSeconds: 10,
           title: ad.title,
+          note: ad.note,
+          business: business
+            ? {
+                id: String(business._id),
+                name: business.name,
+                category: business.category,
+                address: business.address,
+                location: business.location,
+                logoUrl,
+              }
+            : null,
         };
       })
     );

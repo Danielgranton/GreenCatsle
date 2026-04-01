@@ -35,41 +35,62 @@ const getAccessToken = async () => {
 }
 
 export const payWithMpesa = async (amount, phone) => {
+  try {
 
+    const formatPhone = (phone) => {
+  if (phone.startsWith("0")) return "254" + phone.slice(1);
+  if (phone.startsWith("+254")) return phone.replace("+", "");
+  return phone;
+};
+
+
+const formattedPhone = formatPhone(phone);
     const token = await getAccessToken();
     const timestamp = formatTimestamp();
 
-    const password = Buffer.from( shortcode + passkey + timestamp ).toString("base64");
+    const password = Buffer.from(shortcode + passkey + timestamp).toString("base64");
 
     const callbackBaseUrl =
-      process.env.BASE_URL || `http://localhost:${process.env.PORT || 4000}`;
+      process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 4000}`;
 
-    const response = await axios.post(`${baseUrl}/mpesa/stkpush/v1/processrequest`, {
-        BusinessShortCode : shortcode,
-        Password : password,
-        Timestamp : timestamp,
-        TransactionType : "CustomerPayBillOnline",
-        Amount : amount,
-        PartyA : phone,
-        PartyB : shortcode,
-        PhoneNumber : phone,
+    const response = await axios.post(
+      `${baseUrl}/mpesa/stkpush/v1/processrequest`,
+      {
+        BusinessShortCode: shortcode,
+        Password: password,
+        Timestamp: timestamp,
+        TransactionType: "CustomerPayBillOnline",
+        Amount: amount,
+        PartyA: formattedPhone,
+        PartyB: shortcode,
+        PhoneNumber: formattedPhone,
         CallBackURL: `${callbackBaseUrl}/api/webhooks/mpesa`,
-        AccountReference : "FoodOrder",
-        TransactionDesc : "Payment"
-    },
-{
-    headers : {
-        Authorization : `Bearer ${token}`
-    }
-})
-    console.log("Initiating Mpesa payment");
+        AccountReference: "FoodOrder",
+        TransactionDesc: "Payment",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
+    console.log("MPESA RESPONSE:", response.data);
 
     return {
-        status : "pending",
-        transactionId: response.data.CheckoutRequestID
+      status: "pending",
+      transactionId: response.data.CheckoutRequestID,
     };
+  } catch (error) {
+    console.error("MPESA ERROR:", error.response?.data || error.message);
+
+    return {
+      status: "failed",
+      transactionId: null,
+    };
+  }
 };
+
 
 export const stkQuery = async (checkoutRequestId) => {
   const token = await getAccessToken();

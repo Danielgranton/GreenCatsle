@@ -21,9 +21,10 @@ const badge = (status) => {
 
 const safeLower = (v) => String(v || "").toLowerCase();
 
-const signUrl = async ({ token, key }) => {
+const signUrl = async ({ token, key, provider }) => {
   if (!key) return null;
-  const resp = await fetch(`${API_MEDIA}/signed?key=${encodeURIComponent(key)}&expiresInSeconds=600`, {
+  const p = encodeURIComponent(provider || "");
+  const resp = await fetch(`${API_MEDIA}/signed?key=${encodeURIComponent(key)}&provider=${p}&expiresInSeconds=600`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await resp.json();
@@ -78,7 +79,10 @@ export default function AdminAdvertsPage() {
       const unique = Array.from(new Set(keys));
       const missing = unique.filter((k) => !mediaUrls[k]);
       if (missing.length > 0) {
-        const pairs = await Promise.all(missing.map(async (k) => [k, await signUrl({ token, key: k })]));
+        const pairs = await Promise.all(missing.map(async (k) => {
+          const ad = list.find((a) => a?.media?.key === k);
+          return [k, await signUrl({ token, key: k, provider: ad?.media?.provider })];
+        }));
         setMediaUrls((prev) => {
           const next = { ...prev };
           for (const [k, url] of pairs) if (url) next[k] = url;
@@ -136,11 +140,12 @@ export default function AdminAdvertsPage() {
       if (!token) throw new Error("Missing token. Please log in again.");
       if (!businessId) throw new Error("Missing businessId for this account.");
       if (!file) throw new Error("Select an image or video file");
+      if (!note.trim()) throw new Error("Note is required");
 
       const fd = new FormData();
       fd.append("media", file);
       if (title.trim()) fd.append("title", title.trim());
-      if (note.trim()) fd.append("note", note.trim());
+      fd.append("note", note.trim());
 
       const resp = await fetch(`${API_ADVERTS}/business/${businessId}`, {
         method: "POST",
@@ -150,7 +155,13 @@ export default function AdminAdvertsPage() {
       const data = await resp.json();
       if (!resp.ok || !data?.success) throw new Error(data?.message || "Failed to create advert");
 
-      setMessage("Advert created. Complete payment to activate it.");
+      const created = data?.advert;
+      const activated = created?.status === "active" || Number(created?.priceAmount || 0) === 0;
+      setMessage(
+        activated
+          ? "Advert created and activated (free during trial)."
+          : "Advert created. Complete payment to activate it."
+      );
       setFile(null);
       setTitle("");
       setNote("");
@@ -218,7 +229,7 @@ export default function AdminAdvertsPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Adverts</h2>
-          <p className="text-sm text-gray-600 mt-1">Create adverts and activate them by paying the advert fee.</p>
+          <p className="text-sm text-gray-600 mt-1">Create adverts (trial accounts activate for free).</p>
         </div>
         <button
           type="button"
@@ -265,13 +276,14 @@ export default function AdminAdvertsPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Note (optional)</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Note</label>
               <textarea
                 rows={3}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 className="w-full px-4 py-3 text-sm border border-gray-300 rounded-2xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
                 placeholder="Extra details to help you identify the advert"
+                required
               />
             </div>
             <button
@@ -499,4 +511,3 @@ export default function AdminAdvertsPage() {
     </div>
   );
 }
-

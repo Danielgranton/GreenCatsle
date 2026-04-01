@@ -7,88 +7,31 @@ import { payWithCard } from "../services/cardService.js";
 import { settleOrderPaymentAtomic } from "../services/walletService.js";
 
 // main payment handler
-const processPayment = async (req, res) => {
-    try {
-        const { orderId, method, phone } = req.body;
+import { makePayment } from "../services/paymentService.js";
 
-        if (!orderId) {
-          return res.status(400).json({ success: false, message: "orderId is required" });
-        }
+ const processPayment = async (req, res) => {
+  try {
+    const { orderId, method, phone } = req.body;
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
 
-        const order = await Order.findById(orderId);
+    const payment = await makePayment({ userId: req.user.id, orderId, amount: order.totalAmount, method, phone });
 
-        if(!order) {
-            return res.status(404).json({
-                succsess : false,
-                message : "Order not found"
-            });
-        }
-
-        const payment = new Payment({
-            orderId,
-            userId: req.user.id,
-            amount: order.totalAmount,
-            method,
-            phone,
-            purpose: "order",
-        });
-
-        let paymentResult;
-
-        //MPESA
-        if (method === "mpesa") {
-            paymentResult = await payWithMpesa(order.totalAmount, phone);
-        }
-        //PAYPAL
-        else if (method === "paypal") {
-            paymentResult = await payWithPaypal(order.totalAmount);
-        }
-        //CARD
-        else if (method === "card") {
-            paymentResult = await payWithCard(order.totalAmount);
-        }
-
-        //CASH
-        else if(method === "cash") {
-            paymentResult = {
-                status : "pending",
-                transactionId : "CASH_ON_DELIVERY",
-            }
-        }
-        else {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid payment method",
-            });
-        }
-
-        payment.status = paymentResult.status;
-        payment.transactionId = paymentResult.transactionId;
-
-        await payment.save();
-
-        if(payment.status === "successful") {
-            order.paymentStatus = "paid";
-            await order.save();
-        }
-
-        res.status(200).json({
-            success : true,
-            payment,
-            meta: {
-                approvalUrl: paymentResult.approvalUrl,
-                clientSecret: paymentResult.clientSecret,
-            }
-        });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({
-            success: false,
-            message: "Error processing payment",
-        });
+    if (payment.status === "failed") {
+        return res.status(400).json({ success: false, message: "Payment initiation failed. Please check your details and try again." });
     }
-};
 
+    if (payment.status === "successful") {
+      order.paymentStatus = "paid";
+      await order.save();
+    }
+
+    res.status(200).json({ success: true, payment });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Error processing payment" });
+  }
+};
 const refundPayment = async (req , res) => {
     try {
         const { paymentId } = req.body;
@@ -130,7 +73,7 @@ export { processPayment , refundPayment };
 
 export const capturePaypalPayment = async (req, res) => {
   try {
-    const { paymentId, paypalOrderId } = req.body;
+    const { paymentId, paypalOrderId,  } = req.body;
 
     let payment = null;
     if (paymentId) payment = await Payment.findById(paymentId);

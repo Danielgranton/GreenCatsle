@@ -34,11 +34,37 @@ import menuMediaRouter from "./routes/menuMediaRoute.js";
 import businessSettingsRouter from "./routes/businessSettingsRoute.js";
 import driverApplicationRouter from "./routes/driverApplicationRoute.js";
 import jobApplicationRouter from "./routes/jobApplicationRoute.js";
+import oauthRouter from "./routes/oauthRoute.js";
 
 const app = express();
 app.set("trust proxy", 1);
 
 const port = process.env.PORT || 4000;
+
+const defaultAllowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5175",
+  "https://green-catsle-6jue.vercel.app",
+];
+
+const envAllowedOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envAllowedOrigins])];
+
+const isDev = process.env.NODE_ENV !== "production";
+const isLocalhostOrigin = (origin) =>
+  /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+
+const corsOrigin = (origin, callback) => {
+  if (!origin) return callback(null, true); // allow Postman / server requests
+  if (allowedOrigins.includes(origin)) return callback(null, true);
+  if (isDev && isLocalhostOrigin(origin)) return callback(null, true);
+  return callback(null, false);
+};
+
 app.use(
   express.json({
     limit: "1mb",
@@ -56,13 +82,13 @@ import userModel from "./models/userModel.js";
 
 const server = http.createServer(app);
 export const io = new Server(server, {
-  cors : {
-    origin: "http://localhost:5173",
+  cors: {
+    origin: corsOrigin,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
-  }
-})
+    credentials: true,
+  },
+});
 setIO(io);
 
 io.on("connection", (socket) => {
@@ -91,10 +117,6 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("User disconnected", socket.id);
   })
-})
-
-io.on("connection", (socket) => {
-
   socket.on("joinOrderRoom", (orderId) => {
     socket.join(orderId);
   });
@@ -106,31 +128,9 @@ io.on("connection", (socket) => {
 //middleware
 
 
-const defaultAllowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5175",
-  "https://green-catsle-6jue.vercel.app",
-];
-
-const envAllowedOrigins = (process.env.CORS_ORIGINS || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
-const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envAllowedOrigins])];
-
-const isDev = process.env.NODE_ENV !== "production";
-const isLocalhostOrigin = (origin) =>
-  /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // allow Postman / server requests
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      if (isDev && isLocalhostOrigin(origin)) return callback(null, true);
-      return callback(null, false);
-    },
+    origin: corsOrigin,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -175,6 +175,7 @@ app.use("/api/menu-items", menuItemRouter);
 app.use("/api/menu-media", menuMediaRouter);
 app.use("/api/business-settings", businessSettingsRouter);
 app.use("/api/driver-applications", driverApplicationRouter);
+app.use("/api/oauth", oauthRouter);
 
 
 app.get("/", ( req, res) => {

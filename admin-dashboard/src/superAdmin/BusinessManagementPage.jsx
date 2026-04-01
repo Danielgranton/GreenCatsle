@@ -35,9 +35,10 @@ const makeLogoPinIcon = ({ logoUrl, selected = false }) => {
   });
 };
 
-const signUrl = async ({ token, key }) => {
+const signUrl = async ({ token, key, provider }) => {
   if (!key) return null;
-  const resp = await fetch(`${API_MEDIA}/signed?key=${encodeURIComponent(key)}&expiresInSeconds=600`, {
+  const p = encodeURIComponent(provider || "");
+  const resp = await fetch(`${API_MEDIA}/signed?key=${encodeURIComponent(key)}&provider=${p}&expiresInSeconds=600`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await resp.json();
@@ -131,21 +132,26 @@ export default function BusinessManagementPage() {
       setBusinesses(list);
       if (selectedId && !list.some((b) => String(b._id) === String(selectedId))) setSelectedId("");
 
-      const keys = Array.from(
-        new Set(
-          list
-            .map((b) => b?.logo?.key)
-            .filter(Boolean)
-            .map((k) => String(k))
-        )
-      );
-      const missing = keys.filter((k) => !logoUrlsByKeyRef.current?.[k]);
+      const keysWithProvider = list
+        .filter((b) => b?.logo?.key)
+        .map((b) => ({ key: String(b.logo.key), provider: b.logo.provider }));
+
+      const uniqueKeys = [];
+      const seen = new Set();
+      for (const obj of keysWithProvider) {
+        if (!seen.has(obj.key)) {
+          seen.add(obj.key);
+          uniqueKeys.push(obj);
+        }
+      }
+
+      const missing = uniqueKeys.filter((obj) => !logoUrlsByKeyRef.current?.[obj.key]);
       if (missing.length) {
-        const results = await Promise.allSettled(missing.map((key) => signUrl({ token, key })));
+        const results = await Promise.allSettled(missing.map((obj) => signUrl({ token, key: obj.key, provider: obj.provider })));
         const next = {};
         for (let i = 0; i < missing.length; i++) {
           const r = results[i];
-          if (r.status === "fulfilled" && r.value) next[missing[i]] = r.value;
+          if (r.status === "fulfilled" && r.value) next[missing[i].key] = r.value;
         }
         if (Object.keys(next).length) setLogoUrlsByKey((prev) => ({ ...prev, ...next }));
       }

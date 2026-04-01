@@ -6,7 +6,9 @@ import { deleteObject, makeObjectKey, putObject } from "../services/storageServi
 const assertOwner = async ({ businessId, user }) => {
   const business = await Business.findById(businessId);
   if (!business) return { error: { status: 404, message: "Business not found" } };
-  if (!user || !user._id?.equals(business.ownerId)) {
+  const isSuper = user?.role === "superadmin";
+  const isOwner = user?._id && business.ownerId && user._id.equals(business.ownerId);
+  if (!isSuper && !isOwner) {
     return { error: { status: 403, message: "Access denied" } };
   }
   return { business };
@@ -73,4 +75,3 @@ export const uploadServiceImage = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to upload service image" });
   }
 };
-

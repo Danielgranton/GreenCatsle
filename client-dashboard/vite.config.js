@@ -11,4 +11,9 @@ export default defineConfig({
   optimizeDeps: {
     include: ['leaflet'],
   },
+  server: {
+    allowedHosts: [
+      'wade-unindulged-fruitlessly.ngrok-free.dev'
+    ]
+  }
 });

@@ -7,7 +7,7 @@ import { createNotification } from "../services/notificationService.js";
 //place a new order
 const placeOrder = async (req, res) => {
     try {
-        const { businessId, items, services, deliveryAddress, deliveryCoordinates, totalAmount, expectedCompletionMinutes } = req.body;
+        const { businessId, items, services, deliveryAddress, deliveryCoordinates, totalAmount, expectedCompletionMinutes, contactPhone, note, deliveryFee, deliveryDistanceKm, orderNumber } = req.body;
 
         const business = await Business.findById(businessId);
 
@@ -18,6 +18,11 @@ const placeOrder = async (req, res) => {
             })
         }
 
+        const generateOrderNumber = () => {
+            return `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        }
+
+
         const newOrder = new Order({
             userId : req.user.id,
             businessId,
@@ -26,6 +31,12 @@ const placeOrder = async (req, res) => {
             deliveryAddress,
             deliveryCoordinates,
             totalAmount,
+            paymentStatus: "pending",
+            orderNumber: typeof orderNumber === "string" ? orderNumber : generateOrderNumber(),
+            contactPhone: typeof contactPhone === "string" ? contactPhone : "",
+            note: typeof note === "string" ? note : "",
+            deliveryFee: Number.isFinite(Number(deliveryFee)) ? Number(deliveryFee) : 0,
+            deliveryDistanceKm: Number.isFinite(Number(deliveryDistanceKm)) ? Number(deliveryDistanceKm) : 0,
             expectedCompletedAt:
               Number.isFinite(Number(expectedCompletionMinutes)) && Number(expectedCompletionMinutes) > 0
                 ? new Date(Date.now() + Number(expectedCompletionMinutes) * 60 * 1000)
@@ -43,6 +54,7 @@ const placeOrder = async (req, res) => {
           message: `New order received: ${savedOrder._id}`,
           data: { orderId: String(savedOrder._id) },
         });
+        
         await createNotification({
           recipientUserId: req.user.id,
           type: "order_placed",
@@ -56,7 +68,6 @@ const placeOrder = async (req, res) => {
             success : true,
             message : "Order placed successfully",
             order : savedOrder
-
         })
     } catch (error) {
          console.log(error);

@@ -11,8 +11,11 @@ export const getSignedMediaUrl = async (req, res) => {
     const expiresInSeconds =
       typeof expiresInSecondsRaw === "string" ? Number(expiresInSecondsRaw) : 300;
 
+    const provider = req.query?.provider;
+
     const url = await getSignedGetUrl({
       key,
+      provider,
       expiresInSeconds: Number.isFinite(expiresInSeconds) ? expiresInSeconds : 300,
     });
 

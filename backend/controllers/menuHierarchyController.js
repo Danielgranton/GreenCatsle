@@ -7,7 +7,9 @@ import { deleteObject, makeObjectKey, putObject } from "../services/storageServi
 const assertOwner = async ({ businessId, user }) => {
   const business = await Business.findById(businessId);
   if (!business) return { error: { status: 404, message: "Business not found" } };
-  if (!user || !user._id?.equals(business.ownerId)) {
+  const isSuper = user?.role === "superadmin";
+  const isOwner = user?._id && business.ownerId && user._id.equals(business.ownerId);
+  if (!isSuper && !isOwner) {
     return { error: { status: 403, message: "Access denied" } };
   }
   return { business };
@@ -267,26 +269,11 @@ export const getMenuTree = async (req, res) => {
     const { businessId } = req.params;
 
     const categories = await MenuCategory.find({ businessId, isActive: true }).sort({ sortOrder: 1, name: 1 });
-    const subcategories = await MenuSubcategory.find({ businessId, isActive: true }).sort({ sortOrder: 1, name: 1 });
     const items = await MenuItem.find({ businessId }).sort({ name: 1 });
 
-    const subsByCategory = new Map();
-    for (const sub of subcategories) {
-      const key = String(sub.categoryId);
-      const arr = subsByCategory.get(key) || [];
-      arr.push(sub);
-      subsByCategory.set(key, arr);
-    }
-
     const itemsByCategory = new Map();
-    const itemsBySubcategory = new Map();
     for (const item of items) {
-      if (item.subcategoryId) {
-        const key = String(item.subcategoryId);
-        const arr = itemsBySubcategory.get(key) || [];
-        arr.push(item);
-        itemsBySubcategory.set(key, arr);
-      } else if (item.categoryId) {
+      if (item.categoryId) {
         const key = String(item.categoryId);
         const arr = itemsByCategory.get(key) || [];
         arr.push(item);
@@ -299,14 +286,9 @@ export const getMenuTree = async (req, res) => {
 
     for (const cat of categories) {
       const catId = String(cat._id);
-      const subs = subsByCategory.get(catId) || [];
       const node = {
         category: cat,
         items: itemsByCategory.get(catId) || [],
-        subcategories: subs.map((s) => ({
-          subcategory: s,
-          items: itemsBySubcategory.get(String(s._id)) || [],
-        })),
       };
       if (cat.menuType === "cooked") cooked.push(node);
       else noncooked.push(node);
@@ -318,4 +300,3 @@ export const getMenuTree = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to build menu tree" });
   }
 };
-

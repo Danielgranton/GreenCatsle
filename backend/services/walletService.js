@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Wallet from "../models/walletModel.js";
 import WalletTx from "../models/walletTransactionModel.js";
 import Business from "../models/businessModel.js";
+import { isBusinessInFreeTrial } from "./trialService.js";
 
 const toNumber = (value) => {
   const n = typeof value === "string" ? Number(value) : value;
@@ -15,6 +16,12 @@ const getCommissionRate = () => {
     toNumber(process.env.PLATFORM_FEE_RATE) ??
     0.05; // default 5%
   return Math.max(0, rate);
+};
+
+const getEffectiveCommissionRate = ({ business, platformFeeRate = null }) => {
+  if (platformFeeRate != null) return Math.max(0, Number(platformFeeRate));
+  if (isBusinessInFreeTrial(business)) return 0;
+  return getCommissionRate();
 };
 
 export const getOrCreateSystemWallet = async ({ currency = "KES", session } = {}) => {
@@ -32,20 +39,6 @@ export const getOrCreateBusinessWallet = async ({ businessId, currency = "KES", 
     { session }
   );
   return created[0];
-};
-
-const computeCommissionSplit = ({ totalAmount }) => {
-  const total = toNumber(totalAmount);
-  if (total == null || total <= 0) {
-    const err = new Error("totalAmount must be a positive number");
-    err.code = "INVALID_AMOUNT";
-    throw err;
-  }
-
-  const feeRate = getCommissionRate();
-  const fee = Math.max(0, Math.round(total * feeRate * 100) / 100);
-  const businessNet = Math.max(0, Math.round((total - fee) * 100) / 100);
-  return { total, feeRate, fee, businessNet };
 };
 
 export const postWalletTransaction = async ({
@@ -132,8 +125,7 @@ export const escrowOrderPayment = async ({
     throw err;
   }
 
-  const feeRate =
-    platformFeeRate != null ? Math.max(0, Number(platformFeeRate)) : getCommissionRate();
+  const feeRate = getEffectiveCommissionRate({ business, platformFeeRate });
 
   const fee = Math.max(0, Math.round(total * feeRate * 100) / 100);
   const businessNet = Math.max(0, Math.round((total - fee) * 100) / 100);
@@ -201,11 +193,17 @@ export const settleOrderPaymentAtomic = async ({ order, payment }) => {
   try {
     let result;
     await session.withTransaction(async () => {
-      const { total, fee, businessNet } = computeCommissionSplit({
-        totalAmount: order?.totalAmount,
-      });
-
       const businessId = order.businessId;
+      const business = await Business.findById(businessId).session(session);
+      if (!business) throw new Error("Business not found for order");
+
+      const total = toNumber(order?.totalAmount);
+      if (total == null || total <= 0) throw new Error("order.totalAmount is invalid");
+
+      const feeRate = getEffectiveCommissionRate({ business });
+      const fee = Math.max(0, Math.round(total * feeRate * 100) / 100);
+      const businessNet = Math.max(0, Math.round((total - fee) * 100) / 100);
+
       const currency = payment?.currency || order?.currency || "KES";
 
       const systemWallet = await getOrCreateSystemWallet({ currency, session });

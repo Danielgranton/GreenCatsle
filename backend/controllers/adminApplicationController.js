@@ -2,6 +2,7 @@ import BusinessApplication from "../models/businessApplicationModel.js";
 import userModel from "../models/userModel.js";
 import Business from "../models/businessModel.js";
 import { createNotification } from "../services/notificationService.js";
+import { getTrialDays } from "../services/trialService.js";
 
 export const generateKeywords = (text) => {
   const tokens = String(text || "").toLowerCase().split(/\s+/).filter(Boolean);
@@ -103,6 +104,22 @@ export const approveBusinessApplication = async (req, res) => {
     application.rejectionReason = "";
     application.createdBusinessId = linkedBusinessId;
     await application.save();
+
+    // Start free-trial window from approval.
+    try {
+      const business = await Business.findById(linkedBusinessId);
+      if (business) {
+        const days = getTrialDays();
+        if (!business.approvedAt) business.approvedAt = application.reviewedAt;
+        if (!business.trialStartedAt) business.trialStartedAt = application.reviewedAt;
+        if (!business.trialEndsAt && days > 0) {
+          business.trialEndsAt = new Date(application.reviewedAt.getTime() + days * 24 * 60 * 60 * 1000);
+        }
+        await business.save();
+      }
+    } catch (e) {
+      console.error("Failed to set business trial window:", e);
+    }
 
     await createNotification({
       recipientUserId: user._id,

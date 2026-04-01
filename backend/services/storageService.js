@@ -85,10 +85,10 @@ export const putObject = async ({ buffer, contentType, key }) => {
   return { provider: "local", key };
 };
 
-export const deleteObject = async ({ key }) => {
-  const provider = storageProvider;
+export const deleteObject = async ({ key, provider }) => {
+  const activeProvider = provider || storageProvider;
 
-  if (provider === "s3") {
+  if (activeProvider === "s3") {
     const bucket = requireEnv("S3_BUCKET_NAME");
     const client = await getS3Client();
     const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
@@ -99,10 +99,10 @@ export const deleteObject = async ({ key }) => {
   await deleteLocal({ key });
 };
 
-export const getSignedGetUrl = async ({ key, expiresInSeconds = 300 }) => {
-  const provider = storageProvider;
+export const getSignedGetUrl = async ({ key, provider, expiresInSeconds = 300 }) => {
+  const activeProvider = provider || storageProvider;
 
-  if (provider === "s3") {
+  if (activeProvider === "s3") {
     const bucket = requireEnv("S3_BUCKET_NAME");
     const client = await getS3Client();
     const { GetObjectCommand } = await import("@aws-sdk/client-s3");

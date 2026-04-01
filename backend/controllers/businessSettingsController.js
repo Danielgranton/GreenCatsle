@@ -60,10 +60,11 @@ export const uploadBusinessLogo = async (req, res) => {
     const result = await putObject({ buffer: req.file.buffer, contentType: req.file.mimetype, key });
 
     const oldKey = business.logo?.key;
+    const oldProvider = business.logo?.provider;
     business.logo = { key: result.key, provider: result.provider };
     await business.save();
 
-    if (oldKey) await deleteObject({ key: oldKey });
+    if (oldKey) await deleteObject({ key: oldKey, provider: oldProvider });
 
     res.status(200).json({ success: true, logoKey: business.logo.key, business });
   } catch (error) {

@@ -1,7 +1,28 @@
-import React from 'react'
-import ClientNavbar from './components/clientNavbar.jsx'
-import HeroSection from './components/heresection.jsx'
-import ClientMap from './components/clientMap.jsx'
+import React from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import ClientNavbar from "./components/clientNavbar.jsx";
+import Footer from "./components/Footer.jsx";
+import HomePage from "./pages/HomePage.jsx";
+import MenuPage from "./pages/MenuPage.jsx";
+import CartPage from "./pages/CartPage.jsx";
+import OAuthCallback from "./pages/OAuthCallback.jsx";
+import NotificationsPage from "./pages/NotificationsPage.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
+import OrdersPage from "./pages/OrdersPage.jsx";
+
+function ScrollToHash() {
+  const location = useLocation();
+  React.useEffect(() => {
+    const hash = location.hash ? location.hash.slice(1) : "";
+    if (!hash) return;
+    const t = setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+    return () => clearTimeout(t);
+  }, [location.hash, location.pathname]);
+  return null;
+}
 
 const App = () => {
   return (
@@ -9,19 +30,18 @@ const App = () => {
 
       {/* navbar  */}
       <ClientNavbar />
-
-
-    <div className='flex'>
-      {/* main conten  */}
-      <div className='w-2/3'>
-        <HeroSection />
-      </div>
-
-      {/* map  */}
-      <div className="w-1/3 h-[calc(100vh-64px)] sticky top-16 overflow-y-scroll border-l border-gray-600 p-2">
-        <ClientMap />
-      </div>
-     </div> 
+      <ScrollToHash />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/menu" element={<MenuPage />} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/oauth/callback" element={<OAuthCallback />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <Footer />
     </div>
   )
 }

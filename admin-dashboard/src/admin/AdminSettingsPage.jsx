@@ -39,9 +39,10 @@ const inputClass =
 
 const labelClass = "block text-xs font-medium text-gray-600 mb-2";
 
-const signUrl = async ({ token, key }) => {
+const signUrl = async ({ token, key, provider }) => {
   if (!key) return null;
-  const resp = await fetch(`${API_MEDIA}/signed?key=${encodeURIComponent(key)}&expiresInSeconds=600`, {
+  const p = encodeURIComponent(provider || "");
+  const resp = await fetch(`${API_MEDIA}/signed?key=${encodeURIComponent(key)}&provider=${p}&expiresInSeconds=600`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await resp.json();
@@ -125,7 +126,7 @@ export default function AdminSettingsPage() {
         setLat(String(coords[1]));
       }
 
-      const signed = await signUrl({ token, key: b?.logo?.key || null });
+      const signed = await signUrl({ token, key: b?.logo?.key || null, provider: b?.logo?.provider });
       setLogoUrl(signed || "");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load business");
@@ -205,7 +206,7 @@ export default function AdminSettingsPage() {
       const data = await resp.json();
       if (!resp.ok || !data?.success) throw new Error(data?.message || "Failed to upload logo");
 
-      const signed = await signUrl({ token, key: data.logoKey });
+      const signed = await signUrl({ token, key: data.logoKey, provider: data?.business?.logo?.provider });
       setLogoUrl(signed || "");
       setMessage("Logo updated");
       setBusiness(data.business || business);

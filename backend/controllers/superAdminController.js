@@ -5,6 +5,7 @@ import Payment from "../models/paymentModel.js";
 import Advert from "../models/advertModel.js";
 import Review from "../models/reviewModel.js";
 import WebhookEvent from "../models/webhookEventModel.js";
+import { getTrialDays } from "../services/trialService.js";
 import userModel from "../models/userModel.js";
 import Complaint from "../models/complaintModel.js";
 
@@ -250,6 +251,16 @@ export const adminSetBusinessStatus = async (req, res) => {
     const business = await Business.findById(businessId);
     if (!business) return res.status(404).json({ success: false, message: "Business not found" });
     business.status = status;
+    // If the business is being activated for the first time, start the trial window now.
+    if (status === "active" && !business.approvedAt) {
+      const now = new Date();
+      const days = getTrialDays();
+      business.approvedAt = now;
+      business.trialStartedAt = now;
+      if (!business.trialEndsAt && days > 0) {
+        business.trialEndsAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+      }
+    }
     await business.save();
     res.status(200).json({ success: true, business });
   } catch (error) {
