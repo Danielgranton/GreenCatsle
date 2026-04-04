@@ -3,6 +3,7 @@ import authMiddleware from "../middleware/authMiddleware.js";
 import allowRoles from "../middleware/allowRoles.js";
 import {
   adminGetOrder,
+  adminDeleteAdvert,
   adminListAdverts,
   adminListBusinesses,
   adminListBusinessesManagement,
@@ -28,6 +29,7 @@ router.get("/payments", adminListPayments);
 
 router.get("/adverts", adminListAdverts);
 router.patch("/adverts/:advertId/status", adminSetAdvertStatus);
+router.delete("/adverts/:advertId", adminDeleteAdvert);
 
 router.get("/businesses", adminListBusinesses);
 router.get("/businesses/management", adminListBusinessesManagement);

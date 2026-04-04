@@ -188,86 +188,90 @@ export const escrowOrderPaymentAtomic = async ({ order, payment }) => {
 };
 
 // New primary flow: system collects gross, keeps commission, pays out net to business wallet.
+export const settleOrderPayment = async ({ order, payment, session }) => {
+  const businessId = order.businessId;
+  const business = await Business.findById(businessId).session(session || null);
+  if (!business) throw new Error("Business not found for order");
+
+  const total = toNumber(order?.totalAmount);
+  if (total == null || total <= 0) throw new Error("order.totalAmount is invalid");
+
+  const feeRate = getEffectiveCommissionRate({ business });
+  const fee = Math.max(0, Math.round(total * feeRate * 100) / 100);
+  const businessNet = Math.max(0, Math.round((total - fee) * 100) / 100);
+
+  const currency = payment?.currency || order?.currency || "KES";
+
+  const systemWallet = await getOrCreateSystemWallet({ currency, session });
+  const businessWallet = await getOrCreateBusinessWallet({ businessId, currency, session });
+
+  const paymentId = payment?._id || null;
+  const orderId = order?._id || null;
+
+  // 1) Collect gross into system wallet.
+  await postWalletTransaction({
+    walletId: systemWallet._id,
+    direction: "credit",
+    balance: "available",
+    amount: total,
+    currency,
+    kind: "payment_gross_in",
+    externalRef: paymentId ? `payment:${paymentId}:gross_in` : "",
+    orderId,
+    paymentId,
+    businessId,
+    note: "Collect gross payment into system wallet",
+    session,
+    meta: {
+      method: payment?.method || "unknown",
+    },
+  });
+
+  // 2) Payout business net from system -> business wallet.
+  if (businessNet > 0) {
+    await postWalletTransaction({
+      walletId: systemWallet._id,
+      direction: "debit",
+      balance: "available",
+      amount: businessNet,
+      currency,
+      kind: "business_payout",
+      externalRef: paymentId ? `payment:${paymentId}:payout_out` : "",
+      orderId,
+      paymentId,
+      businessId,
+      note: "Payout business net amount",
+      session,
+      meta: { fee, method: payment?.method || "unknown" },
+    });
+
+    await postWalletTransaction({
+      walletId: businessWallet._id,
+      direction: "credit",
+      balance: "available",
+      amount: businessNet,
+      currency,
+      kind: "business_payout_in",
+      externalRef: paymentId ? `payment:${paymentId}:payout_in` : "",
+      orderId,
+      paymentId,
+      businessId,
+      note: "Receive business net amount",
+      session,
+      meta: { fee, method: payment?.method || "unknown" },
+    });
+  }
+
+  // System effectively retains `fee` (gross in - payout out).
+  return { fee, businessNet, currency };
+};
+
 export const settleOrderPaymentAtomic = async ({ order, payment }) => {
   const session = await mongoose.startSession();
   try {
     let result;
     await session.withTransaction(async () => {
-      const businessId = order.businessId;
-      const business = await Business.findById(businessId).session(session);
-      if (!business) throw new Error("Business not found for order");
-
-      const total = toNumber(order?.totalAmount);
-      if (total == null || total <= 0) throw new Error("order.totalAmount is invalid");
-
-      const feeRate = getEffectiveCommissionRate({ business });
-      const fee = Math.max(0, Math.round(total * feeRate * 100) / 100);
-      const businessNet = Math.max(0, Math.round((total - fee) * 100) / 100);
-
-      const currency = payment?.currency || order?.currency || "KES";
-
-      const systemWallet = await getOrCreateSystemWallet({ currency, session });
-      const businessWallet = await getOrCreateBusinessWallet({ businessId, currency, session });
-
-      const paymentId = payment?._id || null;
-      const orderId = order?._id || null;
-
-      // 1) Collect gross into system wallet.
-      await postWalletTransaction({
-        walletId: systemWallet._id,
-        direction: "credit",
-        balance: "available",
-        amount: total,
-        currency,
-        kind: "payment_gross_in",
-        externalRef: paymentId ? `payment:${paymentId}:gross_in` : "",
-        orderId,
-        paymentId,
-        businessId,
-        note: "Collect gross payment into system wallet",
-        session,
-        meta: {
-          method: payment?.method || "unknown",
-        },
-      });
-
-      // 2) Payout business net from system -> business wallet.
-      if (businessNet > 0) {
-        await postWalletTransaction({
-          walletId: systemWallet._id,
-          direction: "debit",
-          balance: "available",
-          amount: businessNet,
-          currency,
-          kind: "business_payout",
-          externalRef: paymentId ? `payment:${paymentId}:payout_out` : "",
-          orderId,
-          paymentId,
-          businessId,
-          note: "Payout business net amount",
-          session,
-          meta: { fee, method: payment?.method || "unknown" },
-        });
-
-        await postWalletTransaction({
-          walletId: businessWallet._id,
-          direction: "credit",
-          balance: "available",
-          amount: businessNet,
-          currency,
-          kind: "business_payout_in",
-          externalRef: paymentId ? `payment:${paymentId}:payout_in` : "",
-          orderId,
-          paymentId,
-          businessId,
-          note: "Receive business net amount",
-          session,
-          meta: { fee, method: payment?.method || "unknown" },
-        });
-      }
-
-      // System effectively retains `fee` (gross in - payout out).
-      result = { fee, businessNet, currency };
+      result = await settleOrderPayment({ order, payment, session });
     });
     return result;
   } finally {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const API_BASE = "http://localhost:4000/api";
 
@@ -19,30 +19,28 @@ const JobBoardPage = () => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const fetchJobs = async () => {
-    setLoadingJobs(true);
-    try {
-      const qs = new URLSearchParams();
-      qs.set("status", "open");
-      const resp = await fetch(`${API_BASE}/jobs?${qs.toString()}`);
-      const data = await resp.json();
-      if (!resp.ok || !data?.success) throw new Error(data?.message || "Failed to load jobs");
-      const list = Array.isArray(data.jobs) ? data.jobs : [];
-      setJobs(list);
-      if (!selectedJobId && list[0]) setSelectedJobId(list[0]._id);
-    } catch (e) {
-      console.error(e);
-      setError(e instanceof Error ? e.message : "Failed to load jobs");
-    } finally {
-      setLoadingJobs(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchJobs = async () => {
+      setLoadingJobs(true);
+      try {
+        const qs = new URLSearchParams();
+        qs.set("status", "open");
+        const resp = await fetch(`${API_BASE}/jobs?${qs.toString()}`);
+        const data = await resp.json();
+        if (!resp.ok || !data?.success) throw new Error(data?.message || "Failed to load jobs");
+        const list = Array.isArray(data.jobs) ? data.jobs : [];
+        setJobs(list);
+        setSelectedJobId((prev) => prev || (list[0]?._id || ""));
+      } catch (e) {
+        console.error(e);
+        setError(e instanceof Error ? e.message : "Failed to load jobs");
+      } finally {
+        setLoadingJobs(false);
+      }
+    };
+
     void fetchJobs();
   }, []);
-
-  const selectedJob = useMemo(() => jobs.find((job) => job._id === selectedJobId), [jobs, selectedJobId]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();

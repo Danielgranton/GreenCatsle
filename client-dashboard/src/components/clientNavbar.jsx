@@ -5,7 +5,6 @@ import {
   Home,
   Utensils,
   ShoppingCart,
-  Settings,
   LogOutIcon,
   ListOrdered,
   AtSign,
@@ -16,15 +15,18 @@ import {
   X,
   Globe,
   Share2,
-  Camera
+  Camera,
+  MapPinned,
+  AppWindow
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../lib/apiBase.js";
 
-const API_USERS = "http://localhost:4000/api/users";
-const API_OAUTH = "http://localhost:4000/api/oauth";
-const API_CART = "http://localhost:4000/api/cart";
-const API_NOTIFICATIONS = "http://localhost:4000/api/notifications";
+const API_USERS = `${API_BASE_URL}/api/users`;
+const API_OAUTH = `${API_BASE_URL}/api/oauth`;
+const API_CART = `${API_BASE_URL}/api/cart`;
+const API_NOTIFICATIONS = `${API_BASE_URL}/api/notifications`;
 
 const readStoredUser = () => {
   try {
@@ -232,7 +234,6 @@ const ClientNavbar = () => {
       window.removeEventListener("gc_cart_updated", onCart);
       window.removeEventListener("storage", onCart);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const logout = () => {
@@ -253,20 +254,40 @@ const ClientNavbar = () => {
 
   return (
     <>
-    <header className="flex items-center justify-between bg-white border-b border-gray-200 px-6 py-3 shadow-sm sticky top-0 z-50">
+    <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white border-b border-gray-200 px-3 sm:px-6 py-2 sm:py-3 shadow-sm sticky top-0 z-50 gap-2">
       
       {/* Logo */}
-      <div className="flex items-center cursor-pointer">
-        <img
+      <div className="w-full sm:w-auto flex items-center sm:justify-start shrink-0">
+        <button
+          type="button"
           onClick={() => navigate("/")}
-          src="/systemlogo.png"
-          alt="logo"
-          className="h-60 -mt-25 -mb-22 w-auto object-contain"
-        />
+          className="inline-flex items-center gap-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+          aria-label="Go to homepage"
+        >
+          <div className="h-10 w-40 sm:h-12 sm:w-40  md:h-14 md:w-40 rounded-xl overflow-hidden ">
+            <img
+              src="/systemlogo.png"
+              alt="FoodNest"
+              className="w-full h-full object-cover scale-[1.35] origin-center"
+              draggable="false"
+            />
+          </div>
+        </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex items-center gap-8">
+      <nav className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-1 sm:gap-8">
+        {location.pathname === "/" ? (
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event("gc_discovery_toggle"))}
+            className="lg:hidden inline-flex items-center justify-center h-10 w-10 rounded-xl text-gray-600 hover:text-emerald-700 hover:bg-emerald-50 transition"
+            aria-label="Open business discovery"
+            title="Discovery"
+          >
+            <MapPinned className="h-5 w-5 text-emerald-600" />
+          </button>
+        ) : null}
         {navItems.filter(Boolean).map((item) => {
           const Icon = item.icon;
 
@@ -277,10 +298,19 @@ const ClientNavbar = () => {
                 {/* Account Button */}
                 <div
                     onClick={() => setDropDown(!dropDown)}
-                    className="flex items-center gap-2 text-sm font-medium cursor-pointer text-gray-600 hover:text-green-600"
+                    role="button"
+                    tabIndex={0}
+                    title="Account"
+                    aria-label="Account"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") setDropDown((p) => !p);
+                    }}
+                    className={`inline-flex items-center justify-center sm:justify-start gap-2 text-sm font-medium cursor-pointer rounded-xl transition h-10 w-10 sm:w-auto sm:px-2 sm:py-2 ${
+                      dropDown ? "bg-emerald-50 text-green-700" : "text-gray-600 hover:text-green-600 hover:bg-gray-50"
+                    }`}
                 >
                     <Icon className={`h-5 w-5 ${item.className}`} />
-                    <span>{accountLabel}</span>
+                    <span className="hidden sm:inline">{accountLabel}</span>
                 </div>
 
                 {/* Dropdown */}
@@ -304,14 +334,7 @@ const ClientNavbar = () => {
                             <ListOrdered className="h-5 w-5 text-orange-600" />
                             <span>Orders</span>
                           </NavLink>
-                          <NavLink
-                            to="/settings"
-                            onClick={() => setDropDown(false)}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-green-600 transition"
-                          >
-                            <Settings className="h-5 w-5 text-blue-600" />
-                            <span>Settings</span>
-                          </NavLink>
+                         
                           <button
                             type="button"
                             onClick={logout}
@@ -355,12 +378,14 @@ const ClientNavbar = () => {
             <NavLink
               key={path || item.name}
               to={path || "/"}
-              className={`flex items-center gap-2 text-sm font-medium transition-all duration-200 relative ${
-                isActive ? "text-green-600" : "text-gray-500 hover:text-green-600"
+              title={item.name}
+              aria-label={item.name}
+              className={`relative inline-flex items-center justify-center sm:justify-start gap-2 text-sm font-medium transition-all duration-200 rounded-xl h-10 w-10 sm:h-auto sm:w-auto sm:px-2 sm:py-2 ${
+                isActive ? "bg-emerald-50 text-green-700 sm:bg-transparent sm:text-green-600" : "text-gray-500 hover:text-green-600 hover:bg-gray-50"
               }`}
             >
               <Icon className={`h-5 w-5 font-bold ${item.className}`} />
-              <span className="relative">
+              <span className="relative hidden sm:inline">
                 {item.name}
                 {item.name === "Cart" && cartCount > 0 ? (
                   <span className="absolute -top-3 -right-5 min-w-5 h-5 px-1 rounded-full bg-red-400 text-white text-[11px] font-bold grid place-items-center">
@@ -373,8 +398,19 @@ const ClientNavbar = () => {
                   </span>
                 ) : null}
               </span>
+              {/* Mobile badges anchored to icon */}
+              {item.name === "Cart" && cartCount > 0 ? (
+                <span className="sm:hidden absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-400 text-white text-[11px] font-bold grid place-items-center">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              ) : null}
+              {item.name === "Notifications" && notifCount > 0 ? (
+                <span className="sm:hidden absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-blue-500 text-white text-[11px] font-bold grid place-items-center">
+                  {notifCount > 99 ? "99+" : notifCount}
+                </span>
+              ) : null}
               {isActive ? (
-                <span className="absolute -bottom-2 left-0 w-full h-[2px] bg-green-600 rounded-full" />
+                <span className="hidden sm:block absolute -bottom-2 left-0 w-full h-[2px] bg-green-600 rounded-full" />
               ) : null}
             </NavLink>
           );
@@ -569,7 +605,7 @@ const ClientNavbar = () => {
               <div className="relative py-2">
                 <div className="h-px bg-gray-200" />
                 <div className="absolute inset-0 grid place-items-center">
-                  <span className="text-[11px] font-semibold text-gray-500 bg-white px-3">or continue with</span>
+                  <span className="text-[11px] font-semibold text-blue-600 bg-white px-3">or continue with</span>
                 </div>
               </div>
 
@@ -578,7 +614,7 @@ const ClientNavbar = () => {
                   href={`${API_OAUTH}/google/start`}
                   className="h-11 px-4 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition inline-flex items-center justify-center gap-2 text-sm font-semibold text-gray-800"
                 >
-                  <Globe className="w-4 h-4" />
+                  <Globe className="w-4 h-4 text-blue-600" />
                   Google
                 </a>
                 <a
@@ -589,15 +625,15 @@ const ClientNavbar = () => {
                   Facebook
                 </a>
                 <a
-                  href={`${API_OAUTH}/meta/start?mode=instagram`}
+                  href={`${API_OAUTH}/microsoft/start`}
                   className="h-11 px-4 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition inline-flex items-center justify-center gap-2 text-sm font-semibold text-gray-800"
                 >
-                  <Camera className="w-4 h-4" />
-                  Instagram
+                  <AppWindow className="w-4 h-4 text-sky-600" />
+                  Microsoft
                 </a>
               </div>
 
-              <div className="text-xs text-gray-500 text-center">
+              <div className="text-xs text-green-600 text-center">
                 By continuing you agree to FoodNest’s terms and privacy policy.
               </div>
             </form>

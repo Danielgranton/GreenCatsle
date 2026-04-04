@@ -1,4 +1,5 @@
 import React from "react";
+import ConfirmDialog from "../components/ConfirmDialog.jsx";
 
 const API_MENU_HIER = "http://localhost:4000/api/menu-hierarchy";
 const API_BUSINESS = "http://localhost:4000/api/business";
@@ -44,6 +45,11 @@ export default function AdminMenuPage() {
   const [categoryImageUrls, setCategoryImageUrls] = React.useState({});
   const [tree, setTree] = React.useState(null);
   const [imageUrls, setImageUrls] = React.useState({});
+  const categoryImageUrlsRef = React.useRef(categoryImageUrls);
+
+  React.useEffect(() => {
+    categoryImageUrlsRef.current = categoryImageUrls;
+  }, [categoryImageUrls]);
 
   // Filters
   const [menuType, setMenuType] = React.useState("cooked"); // cooked/noncooked
@@ -61,6 +67,11 @@ export default function AdminMenuPage() {
   const [catImageCategoryId, setCatImageCategoryId] = React.useState("");
   const [catImageFile, setCatImageFile] = React.useState(null);
   const [catImageSaving, setCatImageSaving] = React.useState(false);
+  const [catDeleting, setCatDeleting] = React.useState(false);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [confirmTitle, setConfirmTitle] = React.useState("");
+  const [confirmDescription, setConfirmDescription] = React.useState("");
+  const confirmActionRef = React.useRef(null);
 
   // Create item
   const [itemName, setItemName] = React.useState("");
@@ -116,7 +127,7 @@ export default function AdminMenuPage() {
     // Best-effort: sign category images for preview.
     const keys = list.map((c) => c?.image?.key).filter(Boolean);
     const unique = Array.from(new Set(keys));
-    const missing = unique.filter((k) => !categoryImageUrls[k]);
+    const missing = unique.filter((k) => !categoryImageUrlsRef.current?.[k]);
     if (missing.length > 0) {
       const pairs = await Promise.all(missing.map(async (k) => {
         const cat = list.find((c) => c?.image?.key === k);
@@ -285,6 +296,52 @@ export default function AdminMenuPage() {
     }
   };
 
+  const performDeleteCategory = async ({ categoryIdToDelete }) => {
+    if (!categoryIdToDelete) return;
+    setCatDeleting(true);
+    setError("");
+    setMessage("");
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Missing token. Please log in again.");
+
+      const resp = await fetch(`${API_MENU_HIER}/business/${businessId}/categories/${categoryIdToDelete}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || !data?.success) throw new Error(data?.message || "Failed to delete category");
+
+      setMessage("Category deleted");
+      setCatImageCategoryId("");
+      setCatImageFile(null);
+      if (String(categoryId) === String(categoryIdToDelete)) setCategoryId("");
+      await load();
+    } catch (e2) {
+      setError(e2 instanceof Error ? e2.message : "Failed to delete category");
+    } finally {
+      setCatDeleting(false);
+    }
+  };
+
+  const requestDeleteCategory = (e) => {
+    e.preventDefault();
+    if (!catImageCategoryId) {
+      setError("Select a category to delete");
+      return;
+    }
+    const cat = categories.find((c) => String(c._id) === String(catImageCategoryId));
+    setConfirmTitle("Delete category?");
+    setConfirmDescription(
+      `Delete "${cat?.name || "this category"}"? You must move/delete all items inside it first. This cannot be undone.`
+    );
+    const id = String(catImageCategoryId);
+    confirmActionRef.current = async () => {
+      await performDeleteCategory({ categoryIdToDelete: id });
+    };
+    setConfirmOpen(true);
+  };
+
   const createItem = async (e) => {
     e.preventDefault();
     setItemSaving(true);
@@ -341,27 +398,6 @@ export default function AdminMenuPage() {
       setError(e2 instanceof Error ? e2.message : "Failed to create menu item");
     } finally {
       setItemSaving(false);
-    }
-  };
-
-  const toggleAvailability = async (row) => {
-    const it = row?.item;
-    if (!it?._id) return;
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("Missing token. Please log in again.");
-      const next = it.availability === "available" ? "unavailable" : "available";
-      const resp = await fetch(`${API_MENU_ITEMS}/business/${businessId}/items/${it._id}`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ availability: next }),
-      });
-      const data = await resp.json();
-      if (!resp.ok || !data?.success) throw new Error(data?.message || "Failed to update item");
-      setMessage("Availability updated");
-      await loadTree(token);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update item");
     }
   };
 
@@ -444,8 +480,6 @@ export default function AdminMenuPage() {
   const deleteEditingItem = async () => {
     const it = editing?.item;
     if (!it?._id) return;
-    const ok = window.confirm(`Delete "${it.name || "this item"}"? This cannot be undone.`);
-    if (!ok) return;
 
     setEditDeleting(true);
     setError("");
@@ -467,6 +501,17 @@ export default function AdminMenuPage() {
     } finally {
       setEditDeleting(false);
     }
+  };
+
+  const requestDeleteEditingItem = () => {
+    const it = editing?.item;
+    if (!it?._id) return;
+    setConfirmTitle("Delete menu item?");
+    setConfirmDescription(`Delete "${it.name || "this item"}"? This cannot be undone.`);
+    confirmActionRef.current = async () => {
+      await deleteEditingItem();
+    };
+    setConfirmOpen(true);
   };
 
   return (
@@ -559,10 +604,10 @@ export default function AdminMenuPage() {
             </form>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4">
-            <div className="text-sm font-semibold text-gray-900">Update category image</div>
-            <div className="text-xs text-gray-500 mt-1">For categories created earlier.</div>
-            <form onSubmit={saveCategoryImage} className="mt-4 space-y-3">
+	          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4">
+	            <div className="text-sm font-semibold text-gray-900">Update category image</div>
+	            <div className="text-xs text-gray-500 mt-1">For categories created earlier.</div>
+	            <form onSubmit={saveCategoryImage} className="mt-4 space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
                 <select
@@ -579,7 +624,7 @@ export default function AdminMenuPage() {
                 </select>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
+                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
                   {(() => {
                     const cat = categories.find((c) => String(c._id) === String(catImageCategoryId));
                     const key = cat?.image?.key || null;
@@ -599,19 +644,48 @@ export default function AdminMenuPage() {
                   />
                 </div>
               </div>
-              <button
-                type="submit"
-                disabled={catImageSaving}
-                className="w-full h-11 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-semibold disabled:opacity-50"
-              >
-                {catImageSaving ? "Uploading…" : "Upload image"}
-              </button>
-            </form>
-          </div>
+	              <button
+	                type="submit"
+	                disabled={catImageSaving}
+	                className="w-full h-11 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-semibold disabled:opacity-50"
+	              >
+	                {catImageSaving ? "Uploading…" : "Upload image"}
+	              </button>
+	            </form>
+	          </div>
 
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4">
-            <div className="text-sm font-semibold text-gray-900">Create item</div>
-            <form onSubmit={createItem} className="mt-4 space-y-3">
+	          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4">
+	            <div className="text-sm font-semibold text-gray-900">Delete category</div>
+	            <div className="text-xs text-gray-500 mt-1">Only works when the category has no items.</div>
+	            <form onSubmit={requestDeleteCategory} className="mt-4 space-y-3">
+	              <div>
+	                <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
+	                <select
+	                  value={catImageCategoryId}
+	                  onChange={(e) => setCatImageCategoryId(e.target.value)}
+	                  className="w-full h-10 px-4 text-sm border border-gray-300 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+	                >
+	                  <option value="">Select category</option>
+	                  {categories.map((c) => (
+	                    <option key={c._id} value={c._id}>
+	                      {c.name} ({c.menuType})
+	                    </option>
+	                  ))}
+	                </select>
+	              </div>
+	              <button
+	                type="submit"
+	                disabled={catDeleting || !catImageCategoryId}
+	                className="w-full h-11 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold disabled:opacity-50"
+	              >
+	                {catDeleting ? "Deleting…" : "Delete category"}
+	              </button>
+	            </form>
+	          </div>
+
+	          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4">
+	            <div className="text-sm font-semibold text-gray-900">Create item</div>
+	            <form onSubmit={createItem} className="mt-4 space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Menu type</label>
                 <select
@@ -801,12 +875,12 @@ export default function AdminMenuPage() {
                         <tr key={it._id} className="align-top">
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
-                                {imgUrl ? (
-                                  <img src={imgUrl} alt="item" className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="text-xs text-gray-500">img</div>
-                                )}
+	                              <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
+	                                {imgUrl ? (
+	                                  <img src={imgUrl} alt="item" className="w-full h-full object-cover " />
+	                                ) : (
+	                                  <div className="text-xs text-gray-500">img</div>
+	                                )}
                               </div>
                               <div>
                                 <div className="font-semibold text-gray-900">{it.name || "—"}</div>
@@ -827,37 +901,17 @@ export default function AdminMenuPage() {
                           <td className="px-4 py-4">
                             <span className={badge(it.availability)}>{it.availability}</span>
                           </td>
-                          <td className="px-4 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <label className="h-9 px-3 rounded-xl text-sm font-semibold bg-white border border-gray-200 hover:bg-gray-50 cursor-pointer">
-                                Image
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const f = e.target.files?.[0];
-                                    if (f) void uploadImage(it._id, f);
-                                    e.target.value = "";
-                                  }}
-                                />
-                              </label>
-                              <button
-                                type="button"
-                                onClick={() => toggleAvailability(row)}
-                                className="h-9 px-3 rounded-xl text-sm font-semibold bg-white border border-gray-200 hover:bg-gray-50"
-                              >
-                                Toggle
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => openEdit(row)}
-                                className="h-9 px-3 rounded-xl text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700"
-                              >
-                                Edit
-                              </button>
-                            </div>
-                          </td>
+	                          <td className="px-4 py-4 text-right">
+	                            <div className="flex items-center justify-end gap-2">
+	                              <button
+	                                type="button"
+	                                onClick={() => openEdit(row)}
+	                                className="h-9 px-3 rounded-xl text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700"
+	                              >
+	                                Edit
+	                              </button>
+	                            </div>
+	                          </td>
                         </tr>
                       );
                     })
@@ -1026,14 +1080,14 @@ export default function AdminMenuPage() {
               </form>
 
               <div className="px-6 py-4 border-t border-gray-200 bg-white flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={deleteEditingItem}
-                  disabled={editSaving || editDeleting || editImageUploading}
-                  className="h-10 px-4 rounded-xl text-sm font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-50 mr-auto"
-                >
-                  {editDeleting ? "Deleting…" : "Delete"}
-                </button>
+	                <button
+	                  type="button"
+	                  onClick={requestDeleteEditingItem}
+	                  disabled={editSaving || editDeleting || editImageUploading}
+	                  className="h-10 px-4 rounded-xl text-sm font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-50 mr-auto"
+	                >
+	                  {editDeleting ? "Deleting…" : "Delete"}
+	                </button>
                 <button
                   type="button"
                   onClick={closeEdit}
@@ -1051,10 +1105,25 @@ export default function AdminMenuPage() {
                   {editSaving ? "Saving…" : "Save"}
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
+	            </div>
+	          </div>
+	        </div>
+	      ) : null}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title={confirmTitle}
+        description={confirmDescription}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={async () => {
+          if (typeof confirmActionRef.current === "function") await confirmActionRef.current();
+          setConfirmOpen(false);
+          confirmActionRef.current = null;
+        }}
+      />
+	    </div>
+	  );
 }

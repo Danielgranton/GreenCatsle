@@ -1,8 +1,9 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Camera, Eye, EyeOff, Loader2, Mail, Phone, Save, Shield, UserRound } from "lucide-react";
+import { API_BASE_URL } from "../lib/apiBase.js";
 
-const API_BASE = "http://localhost:4000/api";
+const API_BASE = `${API_BASE_URL}/api`;
 
 const api = async (path, { method = "GET", token, body } = {}) => {
   const resp = await fetch(`${API_BASE}${path}`, {
@@ -206,13 +207,13 @@ export default function ProfilePage() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-10">
         <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
-          <div className="text-lg font-semibold text-gray-900">Profile</div>
-          <div className="text-sm text-gray-600 mt-2">Log in to view and edit your profile.</div>
+          <div className="text-lg font-semibold text-yellow-600">Profile</div>
+          <div className="text-sm text-gray-600 mt-2 bg-red-100 p-4 rounded-2xl font-bold text-center">Log in to view and edit your profile.</div>
           <div className="mt-5 flex gap-3">
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-800"
+              className="px-4 py-2 rounded-xl border border-gray-200 bg-green-100 hover:bg-gray-50 text-gray-800"
             >
               Go home
             </button>
@@ -467,4 +468,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-

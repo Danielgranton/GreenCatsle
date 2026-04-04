@@ -4,7 +4,9 @@ import Order from "../models/orderModel.js";
 import { payWithMpesa } from "../services/mpesaService.js";
 import { capturePaypalOrder, payWithPaypal } from "../services/paypalService.js";
 import { payWithCard } from "../services/cardService.js";
-import { settleOrderPaymentAtomic } from "../services/walletService.js";
+import { creditSystemOnlyPaymentAtomic, settleOrderPaymentAtomic } from "../services/walletService.js";
+import { activateAdvertAfterPayment } from "./advertController.js";
+import Advert from "../models/advertModel.js";
 
 // main payment handler
 import { makePayment } from "../services/paymentService.js";
@@ -103,6 +105,22 @@ export const capturePaypalPayment = async (req, res) => {
         await order.save();
         await settleOrderPaymentAtomic({ order, payment });
       }
+    } else if (payment.purpose === "ad_fee") {
+      const advert = payment.advertId ? await Advert.findById(payment.advertId) : null;
+      if (!advert) return res.status(404).json({ success: false, message: "Advert not found for this payment" });
+      // Best-effort amount validation.
+      if (Number(payment.amount) !== Number(advert.priceAmount)) {
+        return res.status(409).json({ success: false, message: "Payment amount does not match advert price" });
+      }
+      await creditSystemOnlyPaymentAtomic({
+        amount: payment.amount,
+        currency: advert.currency || "KES",
+        kind: "ad_fee_in",
+        payment,
+        businessId: payment.businessId || null,
+        note: "Advert fee payment (PayPal)",
+      });
+      await activateAdvertAfterPayment({ payment });
     }
 
     res.status(200).json({ success: true, payment, capture: { id: result.id, status: result.status } });

@@ -1,4 +1,5 @@
 import React from "react";
+import ConfirmDialog from "../components/ConfirmDialog.jsx";
 
 const USERS_BASE = "http://localhost:4000/api/users";
 const MEDIA_BASE = "http://localhost:4000/api/media";
@@ -36,6 +37,7 @@ export default function AccountPage() {
   const [newPassword, setNewPassword] = React.useState("");
   const [pwSaving, setPwSaving] = React.useState(false);
   const [logoutAllLoading, setLogoutAllLoading] = React.useState(false);
+  const [confirmLogoutAllOpen, setConfirmLogoutAllOpen] = React.useState(false);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -178,9 +180,12 @@ export default function AccountPage() {
     }
   };
 
+  const requestLogoutAll = () => {
+    if (logoutAllLoading) return;
+    setConfirmLogoutAllOpen(true);
+  };
+
   const logoutAll = async () => {
-    const ok = window.confirm("Log out all sessions? This will sign you out everywhere, including this device.");
-    if (!ok) return;
     setLogoutAllLoading(true);
     setError("");
     setMessage("");
@@ -342,14 +347,14 @@ export default function AccountPage() {
             </form>
 
             <div className="mt-4">
-              <button
-                type="button"
-                onClick={logoutAll}
-                disabled={logoutAllLoading}
-                className="w-full h-12 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold disabled:opacity-50"
-              >
-                {logoutAllLoading ? "Working…" : "Logout all sessions"}
-              </button>
+	              <button
+	                type="button"
+	                onClick={requestLogoutAll}
+	                disabled={logoutAllLoading}
+	                className="w-full h-12 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold disabled:opacity-50"
+	              >
+	                {logoutAllLoading ? "Working…" : "Logout all sessions"}
+	              </button>
               <div className="text-xs text-gray-500 mt-2">
                 This invalidates all JWT sessions using `tokenVersion`.
               </div>
@@ -397,8 +402,22 @@ export default function AccountPage() {
           </div>
 
          
-        </div>
-      </div>
-    </div>
-  );
+	        </div>
+	      </div>
+
+        <ConfirmDialog
+          open={confirmLogoutAllOpen}
+          title="Logout all sessions?"
+          description="This will sign you out everywhere, including this device."
+          confirmLabel="Logout all"
+          cancelLabel="Cancel"
+          variant="danger"
+          onClose={() => setConfirmLogoutAllOpen(false)}
+          onConfirm={async () => {
+            await logoutAll();
+            setConfirmLogoutAllOpen(false);
+          }}
+        />
+		    </div>
+		  );
 }

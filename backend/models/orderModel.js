@@ -42,6 +42,8 @@ import mongoose from "mongoose";
 	    },
     assignedWorkerId: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null },
     paymentStatus: { type: String, enum: ["pending", "paid", "failed"], default: "pending" },
+    deletedAt: { type: Date, default: null },
+    deletedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null },
     expectedCompletedAt: { type: Date, default: null },
     completedAt: { type: Date, default: null },
     deliveryFee: { type: Number, default: 0 },

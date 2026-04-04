@@ -1,12 +1,16 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CircleMarker, MapContainer, Marker, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 import L from "leaflet";
 import { defaultIcon } from "../lib/leafletConfig";
 import { LocateFixed, Search, X } from "lucide-react";
+import { apiUrl } from "../lib/apiBase.js";
 
 const Nairobi = [-1.2921, 36.8219];
 
 const safeLower = (v) => String(v || "").toLowerCase();
+
+const isFiniteLatLng = (v) =>
+  Array.isArray(v) && v.length === 2 && Number.isFinite(Number(v[0])) && Number.isFinite(Number(v[1]));
 
 const safeAttr = (value) =>
   String(value || "")
@@ -38,7 +42,8 @@ const makeLogoPinIcon = ({ logoUrl }) => {
 const FlyTo = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
-    if (center) map.flyTo(center, zoom ?? 15, { duration: 0.8 });
+    if (!isFiniteLatLng(center)) return;
+    map.flyTo([Number(center[0]), Number(center[1])], zoom ?? 15, { duration: 0.8 });
   }, [center, map, zoom]);
   return null;
 };
@@ -76,6 +81,7 @@ function ClientMap({ onSelectBusiness }) {
   const [locMsg, setLocMsg] = useState("");
   const [showLocPrompt, setShowLocPrompt] = useState(false);
   const [hasAuth, setHasAuth] = useState(() => Boolean(localStorage.getItem("token")));
+  const requestingLocRef = useRef(false);
 
   const dragRef = useRef({
     active: false,
@@ -94,7 +100,7 @@ function ClientMap({ onSelectBusiness }) {
       setLoading(true);
       setError("");
       try {
-        const res = await fetch("http://localhost:4000/api/business");
+        const res = await fetch(apiUrl("/api/business"));
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data?.success) throw new Error(data?.message || "Failed to load businesses");
         setBusinesses(Array.isArray(data.businesses) ? data.businesses : []);
@@ -127,7 +133,7 @@ function ClientMap({ onSelectBusiness }) {
     } catch {
       setShowLocPrompt(true);
     }
-  }, []);
+  }, [hasAuth]);
 
   const categories = useMemo(() => {
     const list = Array.from(new Set(businesses.map((b) => b?.category).filter(Boolean)));
@@ -148,50 +154,48 @@ function ClientMap({ onSelectBusiness }) {
   }, [pins, query, category]);
 
   const selectedBusiness = filteredPins.find((b) => b._id === selectedId) || filteredPins[0] || null;
-  const selectedLatLng = selectedBusiness
+  const selectedLatLngRaw = selectedBusiness
     ? [Number(selectedBusiness.location.coordinates[1]), Number(selectedBusiness.location.coordinates[0])]
     : null;
-const requestLocation = async () => {
-  setLocMsg("");
-  if (!hasAuth) {
-    setLocStatus("denied");
-    setLocMsg("Please login to enable location.");
-    return;
-  }
-  if (!("geolocation" in navigator)) {
-    setLocStatus("error");
-    setLocMsg("Geolocation is not supported on this device/browser.");
-    return;
-  }
+  const selectedLatLng = isFiniteLatLng(selectedLatLngRaw) ? selectedLatLngRaw : null;
+  const requestLocation = useCallback(async () => {
+    if (requestingLocRef.current) return;
+    requestingLocRef.current = true;
 
-  setLocStatus("requesting");
-  try {
-    await new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => resolve(pos),
-        (err) => reject(err),
-        {
+    setLocMsg("");
+    if (!hasAuth) {
+      setLocStatus("denied");
+      setLocMsg("Please login to enable location.");
+      requestingLocRef.current = false;
+      return;
+    }
+    if (!("geolocation" in navigator)) {
+      setLocStatus("error");
+      setLocMsg("Geolocation is not supported on this device/browser.");
+      requestingLocRef.current = false;
+      return;
+    }
+
+    setLocStatus("requesting");
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
           timeout: 15000,
-          maximumAge: 0, // 🔥 FIX
-        }
-      );
-    }).then((pos) => {
+          maximumAge: 0,
+        });
+      });
+
       const lat = Number(pos?.coords?.latitude);
       const lng = Number(pos?.coords?.longitude);
-
-      // 🔥 DEBUG
-      console.log("LAT:", lat);
-      console.log("LNG:", lng);
-      console.log("ACCURACY:", pos.coords.accuracy);
+      const accuracy = Number(pos?.coords?.accuracy);
 
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
         throw new Error("Failed to read location.");
       }
 
-      // ⚠️ Low accuracy warning
-      if (pos.coords.accuracy > 500) {
-        console.warn("Low accuracy location (likely WiFi/IP based)");
+      if (Number.isFinite(accuracy) && accuracy > 2000) {
+        setLocMsg("Your location looks approximate. Turn on GPS/location accuracy for better results.");
       }
 
       setUserLatLng([lat, lng]);
@@ -199,36 +203,36 @@ const requestLocation = async () => {
 
       try {
         sessionStorage.setItem("fn_location_enabled", "1");
-        sessionStorage.setItem(
-          "fn_user_latlng",
-          JSON.stringify({ lat, lng, at: Date.now() })
-        );
-      } catch {}
+        sessionStorage.setItem("fn_user_latlng", JSON.stringify({ lat, lng, accuracy, at: Date.now() }));
+      } catch {
+        // ignore
+      }
 
       setShowLocPrompt(false);
-    });
-  } catch (e) {
-    const code = e?.code;
-    if (code === 1) {
-      setLocStatus("denied");
-      setLocMsg(
-        "Permission denied. Enable location in browser settings to use this feature."
-      );
-    } else {
-      setLocStatus("error");
-      setLocMsg("Could not get your location. Please try again.");
+    } catch (e) {
+      const code = e?.code;
+      if (code === 1) {
+        setLocStatus("denied");
+        setLocMsg("Permission denied. Enable location in browser settings to use this feature.");
+      } else {
+        setLocStatus("error");
+        setLocMsg("Could not get your location. Please try again.");
+      }
+    } finally {
+      requestingLocRef.current = false;
     }
-  }
-};
+  }, [hasAuth]);
 
-useEffect(() => {
-  try {
-    const enabled = sessionStorage.getItem("fn_location_enabled") === "1";
-    if (hasAuth && enabled && !userLatLng) {
-      requestLocation();
+  useEffect(() => {
+    try {
+      const enabled = sessionStorage.getItem("fn_location_enabled") === "1";
+      if (hasAuth && enabled && !userLatLng) {
+        void requestLocation();
+      }
+    } catch {
+      // ignore
     }
-  } catch {}
-}, [hasAuth]);
+  }, [hasAuth, requestLocation, userLatLng]);
 
   const sheetTranslateForState = (state, maxTranslate) => {
     if (state === "full") return Math.max(0, Math.round(maxTranslate * 0.15));
@@ -278,7 +282,6 @@ useEffect(() => {
     const maxTranslate = Math.max(0, el.offsetHeight - 120);
     dragRef.current.maxTranslate = maxTranslate;
     applySheetTranslate(sheetTranslateForState(sheet, maxTranslate));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheet, filteredPins.length]);
 
   const onSheetPointerDown = (e) => {

@@ -9,6 +9,8 @@ import OAuthCallback from "./pages/OAuthCallback.jsx";
 import NotificationsPage from "./pages/NotificationsPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import OrdersPage from "./pages/OrdersPage.jsx";
+import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
+import DataDeletion from "./pages/DataDeletion.jsx";
 
 function ScrollToHash() {
   const location = useLocation();
@@ -38,6 +40,8 @@ const App = () => {
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/data-deletion" element={<DataDeletion />} />
         <Route path="/oauth/callback" element={<OAuthCallback />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

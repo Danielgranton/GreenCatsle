@@ -4,9 +4,11 @@ import { validateBody } from "../middleware/validate.js";
 import {
   advertUpload,
   createAdvert,
+  deleteMyAdvert,
   getAdsFeed,
   listMyBusinessAdverts,
   payAdvertFee,
+  renewAdvert,
 } from "../controllers/advertController.js";
 
 const router = express.Router();
@@ -26,5 +28,16 @@ router.post(
   }),
   payAdvertFee
 );
+router.post(
+  "/business/:businessId/:advertId/renew",
+  authMiddleware,
+  validateBody({
+    days: { type: "number" },
+    method: { type: "nonEmptyString" },
+    phone: { type: "string", optional: true },
+  }),
+  renewAdvert
+);
+router.delete("/business/:businessId/:advertId", authMiddleware, deleteMyAdvert);
 
 export default router;

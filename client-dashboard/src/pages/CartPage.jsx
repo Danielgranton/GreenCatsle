@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
 import { MapPin, Phone, Receipt, CreditCard, Wallet, Smartphone, Loader2, CheckCircle, FileText, Truck } from "lucide-react";
 import { io } from "socket.io-client";
+import { API_BASE_URL } from "../lib/apiBase.js";
 
-const socket = io("http://localhost:4000");
-const API_BASE = "http://localhost:4000/api";
+const socket = API_BASE_URL ? io(API_BASE_URL) : io();
+const API_BASE = `${API_BASE_URL}/api`;
 
 const money = (n) => {
   const v = Number(n || 0);
@@ -636,31 +637,34 @@ useEffect(() => {
     );
   }, [checkoutLines]);
 
-  if (!token) {
-    return (
-      <div className="max-w-3xl mx-auto px-6 py-10">
-        <h1 className="text-lg font-semibold text-gray-900">Cart</h1>
-        <p className="text-sm text-gray-600 mt-2">Please login to view your cart.</p>
-      </div>
-    );
-  }
+  
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      { !token ? (
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Cart</h1>
-          <p className="text-sm text-gray-600 mt-1">Review your items before checkout.</p>
+          <h1 className="text-2xl font-semibold text-yellow-600">Cart</h1>
+          <p className="text-sm text-gray-600 mt-2 text-center bg-red-100 p-4 rounded-2xl font-bold">Please login to view your cart.</p>
         </div>
-        <button
+      ) : (
+        <div>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h1 className="text-2xl font-semibold text-yellow-600 ">Cart</h1>
+              <p className="text-sm text-gray-600 mt-2 bg-green-50 p-4 rounded-2xl font-bold text-center">Review your items before checkout.</p>
+            </div>
+            <button
           type="button"
           disabled={loading || mutatingKey === "clear" || cart.length === 0}
           onClick={clearCart}
-          className="h-10 px-4 rounded-xl border border-gray-200 bg-red-300 text-sm font-bold  hover:bg-red-400 disabled:opacity-50"
+          className="h-10 px-4 rounded-xl border border-gray-200 cursor-pointer text-black bg-red-300 text-sm font-bold  hover:bg-red-400 disabled:opacity-50"
         >
           {mutatingKey === "clear" ? "Clearing…" : "Clear cart"}
         </button>
       </div>
+        </div>
+      )}
+     
 
       {message ? (
         <div className="mt-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl p-4 text-sm">{message}</div>

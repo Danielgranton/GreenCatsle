@@ -1,5 +1,5 @@
 import express from "express";
-import { placeOrder, updateOrderStatus, getUserOrders, getBusinessOrders } from "../controllers/orderController.js";
+import { placeOrder, deleteOrder, updateOrderStatus, getUserOrders, getBusinessOrders } from "../controllers/orderController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import { validateBody } from "../middleware/validate.js";
 
@@ -16,6 +16,7 @@ router.post(
   placeOrder
 );
 router.patch("/:orderId", authMiddleware, updateOrderStatus);
+router.delete("/:orderId", authMiddleware, deleteOrder);
 router.get("/user", authMiddleware, getUserOrders);
 router.get("/business/:businessId", authMiddleware, getBusinessOrders);
 

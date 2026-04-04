@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Wallet from "../models/walletModel.js";
 import WalletTx from "../models/walletTransactionModel.js";
 import Payment from "../models/paymentModel.js";
@@ -374,6 +375,10 @@ export const getMyBusinessStats = async (req, res) => {
     if (!businessId) {
       return res.status(404).json({ success: false, message: "No business linked to this account" });
     }
+    if (!mongoose.Types.ObjectId.isValid(String(businessId))) {
+      return res.status(400).json({ success: false, message: "Invalid businessId on this account" });
+    }
+    const businessObjectId = new mongoose.Types.ObjectId(String(businessId));
 
     const wallet = await Wallet.findOne({ ownerType: "business", businessId });
 
@@ -390,6 +395,32 @@ export const getMyBusinessStats = async (req, res) => {
     ]);
     const revenueTotal = revenueAgg[0]?.total || 0;
     const paymentCount = revenueAgg[0]?.count || 0;
+
+    // Expected cash (cash-on-delivery not yet collected).
+    const expectedCashAgg = await Payment.aggregate([
+      {
+        $match: {
+          purpose: "order",
+          method: "cash",
+          status: "pending",
+          createdAt: { $gte: from, $lte: to },
+          orderId: { $ne: null },
+        },
+      },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "orderId",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: { path: "$order", preserveNullAndEmptyArrays: false } },
+      { $match: { "order.businessId": businessObjectId } },
+      { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } },
+    ]);
+    const expectedCashTotal = expectedCashAgg[0]?.total || 0;
+    const expectedCashCount = expectedCashAgg[0]?.count || 0;
 
     const dailyRevenue = await aggregateTimeSeries({ match: revenueMatch, unit: "day" });
     const peakHours = await WalletTx.aggregate([
@@ -533,6 +564,8 @@ export const getMyBusinessStats = async (req, res) => {
       range: { from, to },
       sales: {
         revenueTotal,
+        expectedCashTotal,
+        expectedCashCount,
         orderCount,
         averageOrderValue,
         dailyRevenue,

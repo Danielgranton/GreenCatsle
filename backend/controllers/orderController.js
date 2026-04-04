@@ -1,8 +1,53 @@
+import mongoose from "mongoose";
 import Order from "../models/orderModel.js";
 import Business from "../models/businessModel.js";
 import OrderEvent from "../models/orderEventModel.js";
+import Payment from "../models/paymentModel.js";
 import { getIO } from "../realtime/io.js";
 import { createNotification } from "../services/notificationService.js";
+import { settleOrderPayment } from "../services/walletService.js";
+
+const settleCashOnCompletionAtomic = async ({ orderId }) => {
+  const session = await mongoose.startSession();
+  try {
+    let settled = null;
+    await session.withTransaction(async () => {
+      const order = await Order.findById(orderId).session(session);
+      if (!order) return;
+
+      // Only settle cash-on-delivery after a successful completion.
+      if (order.status !== "completed") return;
+      if (order.paymentStatus === "paid") return;
+
+      const payment = await Payment.findOne({
+        orderId: order._id,
+        purpose: "order",
+        method: "cash",
+        status: "pending",
+      })
+        .sort({ createdAt: -1 })
+        .session(session);
+
+      if (!payment) return;
+
+      // Mark payment as collected and settle to wallets in the same DB transaction.
+      payment.status = "successful";
+      if (!payment.transactionId || payment.transactionId === "CASH_ON_DELIVERY") {
+        payment.transactionId = `CASH:${String(payment._id)}`;
+      }
+      await payment.save({ session });
+
+      order.paymentStatus = "paid";
+      await order.save({ session });
+
+      await settleOrderPayment({ order, payment, session });
+      settled = { orderId: String(order._id), paymentId: String(payment._id) };
+    });
+    return settled;
+  } finally {
+    session.endSession();
+  }
+};
 
 //place a new order
 const placeOrder = async (req, res) => {
@@ -149,6 +194,16 @@ const updateOrderStatus = async (req, res) => {
           data: { orderId: String(order._id), fromStatus, toStatus: status },
         });
 
+        if (status === "completed") {
+          // If the order was cash-on-delivery, record the money into the wallet ledger
+          // (so admin dashboards pick it up) once the order is successfully completed.
+          try {
+            await settleCashOnCompletionAtomic({ orderId: order._id });
+          } catch (e) {
+            console.error("Failed to settle cash-on-delivery payment:", e);
+          }
+        }
+
         res.status(200).json({
             success : true,
             message : "Order status updated successfully",
@@ -163,11 +218,52 @@ const updateOrderStatus = async (req, res) => {
     }
 }
 
+// soft-delete order (business admin / superadmin)
+const deleteOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+    if (order.deletedAt) {
+      return res.status(200).json({ success: true, message: "Order already deleted", order });
+    }
+
+    const business = await Business.findById(order.businessId);
+    const isSuperadmin = req.user?.role === "superadmin";
+    const isOwner = req.user?._id && business?.ownerId && req.user._id.equals(business.ownerId);
+    if (!isSuperadmin && !isOwner) {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
+    order.deletedAt = new Date();
+    order.deletedByUserId = req.user?._id || null;
+    await order.save();
+
+    await OrderEvent.create({
+      orderId: order._id,
+      actorUserId: req.user?._id || null,
+      type: "deleted",
+      fromStatus: order.status,
+      toStatus: order.status,
+      note: "Order deleted by admin",
+    });
+
+    res.status(200).json({ success: true, message: "Order deleted", order });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "Error deleting order" });
+  }
+};
+
 //get order for a user
 const getUserOrders = async (req, res) => {
     try {
         const orders = await Order.find({
-            userId : req.user.id 
+            userId : req.user.id,
+            deletedAt: null,
         })
         .populate("businessId", "name address ")
         .populate("items.menuItemId", "name price")
@@ -191,7 +287,8 @@ const getUserOrders = async (req, res) => {
 const getBusinessOrders = async (req, res) => {
     try {
         const orders =await Order.find({
-            businessId: req.params.businessId 
+            businessId: req.params.businessId,
+            deletedAt: null,
         })
         .populate("userId", "name email phone")
         .populate("assignedWorkerId", "name email")
@@ -212,6 +309,7 @@ const getBusinessOrders = async (req, res) => {
 
 export {
     placeOrder,
+    deleteOrder,
     updateOrderStatus,
     getUserOrders,
     getBusinessOrders

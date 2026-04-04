@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Pause, Play, RefreshCw } from "lucide-react";
+import { apiUrl } from "../lib/apiBase.js";
 
-const ADS_API = "http://localhost:4000/api/adverts/feed";
+const ADS_API = apiUrl("/api/adverts/feed");
 
 const safeNum = (v, fallback) => {
   const n = typeof v === "string" ? Number(v) : v;

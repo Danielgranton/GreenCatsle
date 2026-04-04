@@ -72,17 +72,19 @@ export default function AdminOverviewPage() {
   const wallet = stats?.wallet?.wallet;
 
   const revenueTotal = safeNumber(stats?.sales?.revenueTotal);
+  const expectedCashTotal = safeNumber(stats?.sales?.expectedCashTotal);
+  const expectedCashCount = safeNumber(stats?.sales?.expectedCashCount);
   const orderCount = safeNumber(stats?.sales?.orderCount);
   const aov = safeNumber(stats?.sales?.averageOrderValue);
   const repeatCustomers = safeNumber(stats?.customers?.repeatCustomers);
   const averageRating = safeNumber(stats?.customers?.averageRating);
   const ratingCount = safeNumber(stats?.customers?.ratingCount);
 
-  const complaintRows = stats?.customers?.complaints || [];
   const complaintsByStatus = React.useMemo(() => {
-    const rows = Array.isArray(complaintRows) ? complaintRows : [];
-    return rows.map((r) => ({ status: r.status, count: safeNumber(r.count) })).filter((r) => r.count > 0);
-  }, [complaintRows]);
+    const rows = stats?.customers?.complaints || [];
+    const safeRows = Array.isArray(rows) ? rows : [];
+    return safeRows.map((r) => ({ status: r.status, count: safeNumber(r.count) })).filter((r) => r.count > 0);
+  }, [stats]);
   const openComplaints = React.useMemo(() => {
     const map = new Map(complaintsByStatus.map((r) => [r.status, r.count]));
     return safeNumber(map.get("open")) + safeNumber(map.get("in_progress"));
@@ -154,6 +156,11 @@ export default function AdminOverviewPage() {
           <div className="text-xs text-gray-500">Revenue</div>
           <div className="text-xl font-semibold text-gray-900 mt-1">{formatMoney(revenueTotal, currency)}</div>
           <div className="text-xs text-gray-500 mt-2">Period total</div>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4">
+          <div className="text-xs text-gray-500">Expected cash</div>
+          <div className="text-xl font-semibold text-gray-900 mt-1">{formatMoney(expectedCashTotal, currency)}</div>
+          <div className="text-xs text-gray-500 mt-2">{expectedCashCount} pending cash-on-delivery</div>
         </div>
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4">
           <div className="text-xs text-gray-500">Orders</div>
@@ -265,4 +272,3 @@ export default function AdminOverviewPage() {
     </div>
   );
 }
-

@@ -2,6 +2,7 @@ import React from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import { defaultIcon } from "../lib/leafletConfig";
+import ConfirmDialog from "../components/ConfirmDialog.jsx";
 
 const API_BASE = "http://localhost:4000/api/superadmin";
 const API_MEDIA = "http://localhost:4000/api/media";
@@ -94,6 +95,8 @@ export default function BusinessManagementPage() {
   const [actionLoadingId, setActionLoadingId] = React.useState("");
   const [logoUrlsByKey, setLogoUrlsByKey] = React.useState({});
   const logoUrlsByKeyRef = React.useRef({});
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [confirmTargetBusinessId, setConfirmTargetBusinessId] = React.useState("");
 
   React.useEffect(() => {
     logoUrlsByKeyRef.current = logoUrlsByKey;
@@ -166,9 +169,12 @@ export default function BusinessManagementPage() {
     void load();
   }, [load]);
 
+  const requestDeactivate = (businessId) => {
+    setConfirmTargetBusinessId(String(businessId || ""));
+    setConfirmOpen(true);
+  };
+
   const deactivate = async (businessId) => {
-    const ok = window.confirm("Remove this business from the system? This will deactivate it (no new orders).");
-    if (!ok) return;
     setActionLoadingId(businessId);
     try {
       const token = localStorage.getItem("token");
@@ -407,17 +413,17 @@ export default function BusinessManagementPage() {
                           </td>
                           <td className="px-4 py-4">
                             <div className="flex items-center justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deactivate(String(b._id));
-                                }}
-                                disabled={actionLoadingId === String(b._id) || b.status === "inactive"}
-                                className="h-9 px-3 rounded-xl text-sm font-semibold bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
-                              >
-                                Remove
-                              </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      requestDeactivate(String(b._id));
+                                    }}
+                                    disabled={actionLoadingId === String(b._id) || b.status === "inactive"}
+                                    className="h-9 px-3 rounded-xl text-sm font-semibold bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+                                  >
+                                    Remove
+                                  </button>
                             </div>
                           </td>
                         </tr>
@@ -491,6 +497,22 @@ export default function BusinessManagementPage() {
           ) : null}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Deactivate business?"
+        description="This will deactivate the business (no new orders)."
+        confirmLabel="Deactivate"
+        cancelLabel="Cancel"
+        variant="danger"
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={async () => {
+          const id = confirmTargetBusinessId;
+          setConfirmOpen(false);
+          setConfirmTargetBusinessId("");
+          if (id) await deactivate(id);
+        }}
+      />
     </div>
   );
 }

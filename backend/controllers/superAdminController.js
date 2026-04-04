@@ -8,6 +8,7 @@ import WebhookEvent from "../models/webhookEventModel.js";
 import { getTrialDays } from "../services/trialService.js";
 import userModel from "../models/userModel.js";
 import Complaint from "../models/complaintModel.js";
+import { deleteObject } from "../services/storageService.js";
 
 const toInt = (value, fallback) => {
   const n = typeof value === "string" ? Number(value) : value;
@@ -119,7 +120,7 @@ export const adminSetAdvertStatus = async (req, res) => {
   try {
     const { advertId } = req.params;
     const { status } = req.body;
-    const allowed = ["pending_payment", "active", "rejected", "archived"];
+    const allowed = ["pending_payment", "active", "expired", "rejected", "archived"];
     if (!allowed.includes(status)) {
       return res.status(400).json({ success: false, message: "Invalid status" });
     }
@@ -132,6 +133,30 @@ export const adminSetAdvertStatus = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Failed to update advert" });
+  }
+};
+
+export const adminDeleteAdvert = async (req, res) => {
+  try {
+    const { advertId } = req.params;
+    const advert = await Advert.findById(advertId);
+    if (!advert) return res.status(404).json({ success: false, message: "Advert not found" });
+
+    const key = advert?.media?.key;
+    const provider = advert?.media?.provider;
+    if (key) {
+      try {
+        await deleteObject({ key, provider });
+      } catch (e) {
+        console.error("Superadmin advert media delete failed:", e);
+      }
+    }
+
+    await Advert.deleteOne({ _id: advert._id });
+    res.status(200).json({ success: true, deletedAdvertId: String(advert._id) });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Failed to delete advert" });
   }
 };
 

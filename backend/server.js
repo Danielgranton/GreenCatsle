@@ -6,6 +6,7 @@ import cors from "cors"
 import { connectDB } from "./config/db.js";
 import foodRouter from "./routes/foodRoute.js";
 import path from "path";
+import { fileURLToPath } from "url";
 import userRouter from "./routes/userRoute.js";
 import cartRouter from "./routes/cartRoute.js";
 import deliveryRouter from "./routes/deliveryRouter.js";
@@ -35,16 +36,21 @@ import businessSettingsRouter from "./routes/businessSettingsRoute.js";
 import driverApplicationRouter from "./routes/driverApplicationRoute.js";
 import jobApplicationRouter from "./routes/jobApplicationRoute.js";
 import oauthRouter from "./routes/oauthRoute.js";
+import { startAdvertLifecycleJobs } from "./services/advertLifecycleService.js";
 
 const app = express();
 app.set("trust proxy", 1);
 
 const port = process.env.PORT || 4000;
+const __filename = fileURLToPath(import.meta.url);
+const __backendDir = path.dirname(__filename);
+const __projectRoot = path.resolve(__backendDir, "..");
 
 const defaultAllowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5175",
   "https://green-catsle-6jue.vercel.app",
+  "https://greencatsle-1.onrender.com",
 ];
 
 const envAllowedOrigins = (process.env.CORS_ORIGINS || "")
@@ -142,11 +148,11 @@ app.use(
 app.use(express.urlencoded({extended: true}));
 //db connection 
 connectDB();
+startAdvertLifecycleJobs();
 
 //api endpoints
 app.use("/api/food", foodRouter);
-const __dirname = path.resolve();
-app.use("/images", express.static(path.join(__dirname, "/uploads")));
+app.use("/images", express.static(path.join(__backendDir, "uploads")));
 app.use("/api/users", userRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/delivery", deliveryRouter);
@@ -177,13 +183,21 @@ app.use("/api/business-settings", businessSettingsRouter);
 app.use("/api/driver-applications", driverApplicationRouter);
 app.use("/api/oauth", oauthRouter);
 
+// Serve client app (single ngrok endpoint)
+const clientDist = path.join(__projectRoot, "client-dashboard", "dist");
+app.use(express.static(clientDist));
 
-app.get("/", ( req, res) => {
-    res.send("API working");
-})
+// Express 5 uses `path-to-regexp` which doesn't accept a bare "*".
+// Use a regexp to serve index.html for all non-API routes.
+app.get(/^(?!\/api\/|\/images\/).*/, (req, res) => {
+  return res.sendFile(path.join(clientDist, "index.html"));
+});
 
-server.listen(port, () => {
-    console.log(`Server started on http://localhost:${port}`); 
-})
+const host = process.env.HOST || (process.env.NODE_ENV === "production" ? undefined : "127.0.0.1");
+
+server.listen(port, host, () => {
+  const shownHost = host || "0.0.0.0";
+  console.log(`Server started on http://${shownHost}:${port}`);
+});
 
 //mongodb+srv://danielgranton:<db_password>@cluster0.iiabbqa.mongodb.net/?

@@ -15,6 +15,7 @@ import WebhookHealthPage from './superAdmin/WebhookHealthPage.jsx';
 import AllComplaintsPage from './superAdmin/AllComplaintsPage.jsx';
 import BusinessManagementPage from './superAdmin/BusinessManagementPage.jsx';
 import AccountPage from './superAdmin/AccountPage.jsx';
+import AdvertsModerationPage from './superAdmin/AdvertsPage.jsx';
 import AdminOverviewPage from './admin/AdminOverviewPage.jsx';
 import AdminWalletPage from './admin/AdminWalletPage.jsx';
 import AdminPayoutsPage from './admin/AdminPayoutsPage.jsx';
@@ -94,6 +95,7 @@ const App = () => {
         <Route path="platform" element={<PlatformOverviewPage />} />
         <Route path="businesses" element={<BusinessApplicationsPage />} />
         <Route path="business-management" element={<BusinessManagementPage />} />
+        <Route path="adverts" element={<AdvertsModerationPage />} />
         <Route path="account" element={<AccountPage />} />
         <Route path="driver-applications" element={<DriverApplicationsPage />} />
         <Route path="system-wallet" element={<SystemWalletPage />} />

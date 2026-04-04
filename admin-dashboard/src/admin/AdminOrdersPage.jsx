@@ -1,4 +1,5 @@
 import React from "react";
+import ConfirmDialog from "../components/ConfirmDialog.jsx";
 
 const API_ORDERS = "http://localhost:4000/api/orders";
 
@@ -44,6 +45,8 @@ export default function AdminOrdersPage() {
   const [selected, setSelected] = React.useState(null);
   const [editStatus, setEditStatus] = React.useState("pending");
   const [saving, setSaving] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
 
   const businessId = localStorage.getItem("businessId") || "";
 
@@ -106,7 +109,7 @@ export default function AdminOrdersPage() {
   };
 
   const closeDetails = () => {
-    if (saving) return;
+    if (saving || deleting) return;
     setSelected(null);
   };
 
@@ -132,6 +135,35 @@ export default function AdminOrdersPage() {
       setError(e instanceof Error ? e.message : "Failed to update order");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const requestDeleteOrder = () => {
+    if (!selected?._id) return;
+    setConfirmOpen(true);
+  };
+
+  const deleteOrder = async () => {
+    if (!selected?._id) return;
+    setDeleting(true);
+    setError("");
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Missing token. Please log in again.");
+
+      const resp = await fetch(`${API_ORDERS}/${selected._id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || !data?.success) throw new Error(data?.message || "Failed to delete order");
+
+      setOrders((prev) => prev.filter((x) => String(x._id) !== String(selected._id)));
+      setSelected(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to delete order");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -301,7 +333,7 @@ export default function AdminOrdersPage() {
                   <button
                     type="button"
                     onClick={closeDetails}
-                    disabled={saving}
+                    disabled={saving || deleting}
                     className="h-9 px-3 rounded-xl text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-800 disabled:opacity-50"
                   >
                     Close
@@ -396,19 +428,43 @@ export default function AdminOrdersPage() {
                 <div className="text-xs text-gray-500">
                   Payment: <span className="font-semibold text-gray-900">{selected.paymentStatus}</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={closeDetails}
-                  className="h-10 px-4 rounded-xl text-sm font-semibold bg-white border border-gray-200 hover:bg-gray-50"
-                >
-                  Done
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={requestDeleteOrder}
+                    disabled={saving || deleting}
+                    className="h-10 px-4 rounded-xl text-sm font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-50"
+                  >
+                    {deleting ? "Deleting…" : "Delete order"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeDetails}
+                    disabled={saving || deleting}
+                    className="h-10 px-4 rounded-xl text-sm font-semibold bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Done
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete order?"
+        description="This hides the order from your orders list. This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onClose={() => (deleting ? null : setConfirmOpen(false))}
+        onConfirm={async () => {
+          await deleteOrder();
+          setConfirmOpen(false);
+        }}
+      />
     </div>
   );
 }
-

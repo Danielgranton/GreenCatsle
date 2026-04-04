@@ -1,4 +1,4 @@
-# FoodNest OAuth (Google / Meta)
+# FoodNest OAuth (Google / Meta / Microsoft)
 
 This project supports social sign-in via server-side OAuth redirects.
 
@@ -12,6 +12,8 @@ Set these in `backend/.env`:
 - `GOOGLE_CLIENT_SECRET`
 - `META_APP_ID` (Facebook/Meta app id)
 - `META_APP_SECRET`
+- `MICROSOFT_CLIENT_ID`
+- `MICROSOFT_CLIENT_SECRET`
 
 ## Redirect URIs
 
@@ -19,6 +21,7 @@ Configure these redirect URIs in the provider dashboards:
 
 - Google: `${PUBLIC_BASE_URL}/api/oauth/google/callback`
 - Meta: `${PUBLIC_BASE_URL}/api/oauth/meta/callback`
+- Microsoft: `${PUBLIC_BASE_URL}/api/oauth/microsoft/callback`
 
 ## Client flow
 
@@ -26,11 +29,10 @@ The client opens:
 
 - `GET /api/oauth/google/start`
 - `GET /api/oauth/meta/start?mode=facebook`
-- `GET /api/oauth/meta/start?mode=instagram`
+- `GET /api/oauth/microsoft/start`
 
 After successful login, the backend redirects to:
 
 - `${CLIENT_PUBLIC_URL}/oauth/callback?token=...&u=...`
 
 The client page at `client-dashboard/src/pages/OAuthCallback.jsx` stores the token/user in `localStorage` and redirects home.
-

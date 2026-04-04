@@ -8,6 +8,7 @@ import {
   Wallet,
   DollarSign,
   MessageSquare,
+  Megaphone,
   Bell,
   Building2,
   Activity,
@@ -23,7 +24,7 @@ const routeForNotification = (n) => {
   if (type === 'business_application') return '/superadmin/businesses';
   if (type === 'payout_request') return '/superadmin/payout-approvals';
   if (type === 'complaint') return '/superadmin/all-complaints';
-  if (type === 'advert') return '/superadmin/business-management';
+  if (type === 'advert') return '/superadmin/adverts';
   return '/superadmin/platform';
 };
 
@@ -55,6 +56,7 @@ export default function SuperAdminDashboard() {
     { path: '/superadmin/platform', icon: LayoutDashboard, label: 'Platform Overview' ,className: 'text-orange-400' },
     { path: '/superadmin/businesses', icon: Building2, label: 'Business Applications', className: 'text-green-300' },
     { path: '/superadmin/business-management', icon: MapPin, label: 'Business Management', className: 'text-green-700' },
+    { path: '/superadmin/adverts', icon: Megaphone, label: 'Adverts', className: 'text-pink-700' },
     { path: '/superadmin/system-wallet', icon: Wallet, label: 'System Wallet', className: 'text-blue-700' },
     { path: '/superadmin/payout-approvals', icon: DollarSign, label: 'Payout Approvals', className: 'text-pink-700' },
     { path: '/superadmin/all-complaints', icon: MessageSquare, label: 'All Complaints', className: 'text-indigo-300' },
