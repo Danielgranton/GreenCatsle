@@ -1,5 +1,4 @@
 import React from "react";
-import ConfirmDialog from "../components/ConfirmDialog.jsx";
 
 const API_MENU_HIER = "http://localhost:4000/api/menu-hierarchy";
 const API_BUSINESS = "http://localhost:4000/api/business";
@@ -68,10 +67,6 @@ export default function AdminMenuPage() {
   const [catImageFile, setCatImageFile] = React.useState(null);
   const [catImageSaving, setCatImageSaving] = React.useState(false);
   const [catDeleting, setCatDeleting] = React.useState(false);
-  const [confirmOpen, setConfirmOpen] = React.useState(false);
-  const [confirmTitle, setConfirmTitle] = React.useState("");
-  const [confirmDescription, setConfirmDescription] = React.useState("");
-  const confirmActionRef = React.useRef(null);
 
   // Create item
   const [itemName, setItemName] = React.useState("");
@@ -296,8 +291,19 @@ export default function AdminMenuPage() {
     }
   };
 
-  const performDeleteCategory = async ({ categoryIdToDelete }) => {
-    if (!categoryIdToDelete) return;
+  const deleteCategory = async (e) => {
+    e.preventDefault();
+    if (!catImageCategoryId) {
+      setError("Select a category to delete");
+      return;
+    }
+
+    const cat = categories.find((c) => String(c._id) === String(catImageCategoryId));
+    const ok = window.confirm(
+      `Delete category "${cat?.name || "this category"}"? You must move/delete all items inside it first. This cannot be undone.`
+    );
+    if (!ok) return;
+
     setCatDeleting(true);
     setError("");
     setMessage("");
@@ -305,7 +311,7 @@ export default function AdminMenuPage() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Missing token. Please log in again.");
 
-      const resp = await fetch(`${API_MENU_HIER}/business/${businessId}/categories/${categoryIdToDelete}`, {
+      const resp = await fetch(`${API_MENU_HIER}/business/${businessId}/categories/${catImageCategoryId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -315,31 +321,13 @@ export default function AdminMenuPage() {
       setMessage("Category deleted");
       setCatImageCategoryId("");
       setCatImageFile(null);
-      if (String(categoryId) === String(categoryIdToDelete)) setCategoryId("");
+      if (String(categoryId) === String(catImageCategoryId)) setCategoryId("");
       await load();
     } catch (e2) {
       setError(e2 instanceof Error ? e2.message : "Failed to delete category");
     } finally {
       setCatDeleting(false);
     }
-  };
-
-  const requestDeleteCategory = (e) => {
-    e.preventDefault();
-    if (!catImageCategoryId) {
-      setError("Select a category to delete");
-      return;
-    }
-    const cat = categories.find((c) => String(c._id) === String(catImageCategoryId));
-    setConfirmTitle("Delete category?");
-    setConfirmDescription(
-      `Delete "${cat?.name || "this category"}"? You must move/delete all items inside it first. This cannot be undone.`
-    );
-    const id = String(catImageCategoryId);
-    confirmActionRef.current = async () => {
-      await performDeleteCategory({ categoryIdToDelete: id });
-    };
-    setConfirmOpen(true);
   };
 
   const createItem = async (e) => {
@@ -480,6 +468,8 @@ export default function AdminMenuPage() {
   const deleteEditingItem = async () => {
     const it = editing?.item;
     if (!it?._id) return;
+    const ok = window.confirm(`Delete "${it.name || "this item"}"? This cannot be undone.`);
+    if (!ok) return;
 
     setEditDeleting(true);
     setError("");
@@ -501,17 +491,6 @@ export default function AdminMenuPage() {
     } finally {
       setEditDeleting(false);
     }
-  };
-
-  const requestDeleteEditingItem = () => {
-    const it = editing?.item;
-    if (!it?._id) return;
-    setConfirmTitle("Delete menu item?");
-    setConfirmDescription(`Delete "${it.name || "this item"}"? This cannot be undone.`);
-    confirmActionRef.current = async () => {
-      await deleteEditingItem();
-    };
-    setConfirmOpen(true);
   };
 
   return (
@@ -624,7 +603,7 @@ export default function AdminMenuPage() {
                 </select>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
                   {(() => {
                     const cat = categories.find((c) => String(c._id) === String(catImageCategoryId));
                     const key = cat?.image?.key || null;
@@ -657,7 +636,7 @@ export default function AdminMenuPage() {
 	          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4">
 	            <div className="text-sm font-semibold text-gray-900">Delete category</div>
 	            <div className="text-xs text-gray-500 mt-1">Only works when the category has no items.</div>
-	            <form onSubmit={requestDeleteCategory} className="mt-4 space-y-3">
+	            <form onSubmit={deleteCategory} className="mt-4 space-y-3">
 	              <div>
 	                <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
 	                <select
@@ -875,7 +854,7 @@ export default function AdminMenuPage() {
                         <tr key={it._id} className="align-top">
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-3">
-	                              <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
+	                            <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
 	                                {imgUrl ? (
 	                                  <img src={imgUrl} alt="item" className="w-full h-full object-cover " />
 	                                ) : (
@@ -903,6 +882,19 @@ export default function AdminMenuPage() {
                           </td>
 	                          <td className="px-4 py-4 text-right">
 	                            <div className="flex items-center justify-end gap-2">
+                              <label className="h-9 px-3 rounded-xl text-sm font-semibold bg-white border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                                Image
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const f = e.target.files?.[0];
+                                    if (f) void uploadImage(it._id, f);
+                                    e.target.value = "";
+                                  }}
+                                />
+                              </label>
 	                              <button
 	                                type="button"
 	                                onClick={() => openEdit(row)}
@@ -1080,14 +1072,14 @@ export default function AdminMenuPage() {
               </form>
 
               <div className="px-6 py-4 border-t border-gray-200 bg-white flex items-center justify-end gap-2">
-	                <button
-	                  type="button"
-	                  onClick={requestDeleteEditingItem}
-	                  disabled={editSaving || editDeleting || editImageUploading}
-	                  className="h-10 px-4 rounded-xl text-sm font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-50 mr-auto"
-	                >
-	                  {editDeleting ? "Deleting…" : "Delete"}
-	                </button>
+                <button
+                  type="button"
+                  onClick={deleteEditingItem}
+                  disabled={editSaving || editDeleting || editImageUploading}
+                  className="h-10 px-4 rounded-xl text-sm font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-50 mr-auto"
+                >
+                  {editDeleting ? "Deleting…" : "Delete"}
+                </button>
                 <button
                   type="button"
                   onClick={closeEdit}
@@ -1105,25 +1097,10 @@ export default function AdminMenuPage() {
                   {editSaving ? "Saving…" : "Save"}
                 </button>
               </div>
-	            </div>
-	          </div>
-	        </div>
-	      ) : null}
-
-      <ConfirmDialog
-        open={confirmOpen}
-        title={confirmTitle}
-        description={confirmDescription}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        variant="danger"
-        onClose={() => setConfirmOpen(false)}
-        onConfirm={async () => {
-          if (typeof confirmActionRef.current === "function") await confirmActionRef.current();
-          setConfirmOpen(false);
-          confirmActionRef.current = null;
-        }}
-      />
-	    </div>
-	  );
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
 }
