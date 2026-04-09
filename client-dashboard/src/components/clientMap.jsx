@@ -121,6 +121,26 @@ function ClientMap({ onSelectBusiness }) {
   }, []);
 
   useEffect(() => {
+    const readCached = () => {
+      try {
+        const raw = sessionStorage.getItem("fn_user_latlng");
+        if (!raw) return;
+        const obj = JSON.parse(raw);
+        const lat = Number(obj?.lat);
+        const lng = Number(obj?.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+        setUserLatLng([lat, lng]);
+      } catch {
+        // ignore
+      }
+    };
+    if (!hasAuth) return;
+    readCached();
+    window.addEventListener("fn_user_latlng_updated", readCached);
+    return () => window.removeEventListener("fn_user_latlng_updated", readCached);
+  }, [hasAuth]);
+
+  useEffect(() => {
     // Show a one-time prompt to enable location (Bolt/Uber style).
     if (!hasAuth) {
       setShowLocPrompt(false);

@@ -22,6 +22,7 @@ import {
 import { NavLink, useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../lib/apiBase.js";
+import { flashToast, useToast } from "./ToastProvider.jsx";
 
 const API_USERS = `${API_BASE_URL}/api/users`;
 const API_OAUTH = `${API_BASE_URL}/api/oauth`;
@@ -62,11 +63,16 @@ const ClientNavbar = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [notifCount, setNotifCount] = useState(0);
+  const [businessCount, setBusinessCount] = useState(0);
+  const [locBannerOpen, setLocBannerOpen] = useState(false);
+  const [locBannerBusy, setLocBannerBusy] = useState(false);
+  const [locBannerMsg, setLocBannerMsg] = useState("");
 
   const dropDownRef = useRef();
   const authFirstFieldRef = useRef(null);
 
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -126,6 +132,24 @@ const ClientNavbar = () => {
     };
   }, []);
 
+  const loadBusinessCount = async () => {
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/business/count`);
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || !data?.success) return;
+      setBusinessCount(Math.max(0, Number(data.count) || 0));
+    } catch {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    if (location.pathname !== "/") return;
+    void loadBusinessCount();
+    const t = window.setInterval(() => void loadBusinessCount(), 60000);
+    return () => window.clearInterval(t);
+  }, [location.pathname]);
+
   const accountLabel = useMemo(() => {
     const name = authUser?.name ? String(authUser.name) : "";
     if (!name) return "Account";
@@ -140,6 +164,67 @@ const ClientNavbar = () => {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [authBusy, authOpen]);
+
+  useEffect(() => {
+    // On mobile, prompt for location after login so users don't miss it (map drawer may be closed).
+    const token = localStorage.getItem("token") || "";
+    if (!token) {
+      setLocBannerOpen(false);
+      return;
+    }
+    try {
+      const dismissed = sessionStorage.getItem("fn_loc_prompt_dismissed") === "1";
+      const enabled = sessionStorage.getItem("fn_location_enabled") === "1";
+      setLocBannerOpen(!dismissed && !enabled);
+    } catch {
+      setLocBannerOpen(true);
+    }
+  }, [authUser?.id]);
+
+  const requestLocationFromBanner = async () => {
+    setLocBannerMsg("");
+    if (!("geolocation" in navigator)) {
+      setLocBannerMsg("Location is not supported on this device/browser.");
+      return;
+    }
+    setLocBannerBusy(true);
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        });
+      });
+      const lat = Number(pos?.coords?.latitude);
+      const lng = Number(pos?.coords?.longitude);
+      const accuracy = Number(pos?.coords?.accuracy);
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error("Failed to read location.");
+
+      try {
+        sessionStorage.setItem("fn_location_enabled", "1");
+        sessionStorage.setItem("fn_user_latlng", JSON.stringify({ lat, lng, accuracy, at: Date.now() }));
+      } catch {
+        // ignore
+      }
+      window.dispatchEvent(new Event("fn_user_latlng_updated"));
+      setLocBannerOpen(false);
+    } catch (e) {
+      if (e?.code === 1) {
+        setLocBannerMsg("Permission denied. Enable location in browser settings to use this feature.");
+        try {
+          sessionStorage.setItem("fn_loc_prompt_dismissed", "1");
+        } catch {
+          // ignore
+        }
+      } else {
+        setLocBannerMsg("Could not get your location. Please try again.");
+      }
+    } finally {
+      setLocBannerBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!authOpen) return;
@@ -191,6 +276,11 @@ const ClientNavbar = () => {
       } catch {
         // ignore
       }
+      const firstName = data?.user?.name ? String(data.user.name).trim().split(/\s+/)[0] : "";
+      flashToast({
+        variant: "success",
+        message: authMode === "register" ? "Account created successfully." : `Welcome${firstName ? `, ${firstName}` : ""}.`,
+      });
       // Hard refresh to ensure the whole app picks up the new auth state everywhere.
       window.location.reload();
     } catch (e) {
@@ -242,6 +332,7 @@ const ClientNavbar = () => {
     setAuthUser(null);
     setCartCount(0);
     setDropDown(false);
+    toast({ variant: "info", message: "Logged out." });
     try {
       sessionStorage.removeItem("fn_loc_prompt_dismissed");
       sessionStorage.removeItem("fn_location_enabled");
@@ -281,11 +372,16 @@ const ClientNavbar = () => {
           <button
             type="button"
             onClick={() => window.dispatchEvent(new Event("gc_discovery_toggle"))}
-            className="lg:hidden inline-flex items-center justify-center h-10 w-10 rounded-xl text-gray-600 hover:text-emerald-700 hover:bg-emerald-50 transition"
+            className="lg:hidden relative inline-flex items-center justify-center h-10 w-10 rounded-xl text-gray-600 hover:text-emerald-700 hover:bg-emerald-50 transition"
             aria-label="Open business discovery"
             title="Discovery"
           >
             <MapPinned className="h-5 w-5 text-emerald-600" />
+            {businessCount > 0 ? (
+              <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-emerald-600 text-white text-[11px] font-bold grid place-items-center border-2 border-white">
+                {businessCount > 99 ? "99+" : businessCount}
+              </span>
+            ) : null}
           </button>
         ) : null}
         {navItems.filter(Boolean).map((item) => {
@@ -297,13 +393,21 @@ const ClientNavbar = () => {
                 
                 {/* Account Button */}
                 <div
-                    onClick={() => setDropDown(!dropDown)}
+                    onClick={() => {
+
+                      if (!authUser) {
+                        setAuthMode("login");
+                        setAuthOpen(true);
+                      } else setDropDown(!dropDown);
+
+                    }}
                     role="button"
                     tabIndex={0}
                     title="Account"
                     aria-label="Account"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") setDropDown((p) => !p);
+                      
                     }}
                     className={`inline-flex items-center justify-center sm:justify-start gap-2 text-sm font-medium cursor-pointer rounded-xl transition h-10 w-10 sm:w-auto sm:px-2 sm:py-2 ${
                       dropDown ? "bg-emerald-50 text-green-700" : "text-gray-600 hover:text-green-600 hover:bg-gray-50"
@@ -315,9 +419,8 @@ const ClientNavbar = () => {
 
                 {/* Dropdown */}
                 {dropDown && (
-                    <div className="absolute right-0 mt-6 w-52 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50">
-                      {authUser ? (
-                        <>
+                    
+                        <div className="absolute right-0 mt-6 w-52 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50">
                           <NavLink
                             to="/profile"
                             onClick={() => setDropDown(false)}
@@ -343,26 +446,12 @@ const ClientNavbar = () => {
                             <LogOutIcon className="h-5 w-5 text-amber-500" />
                             <span>Logout</span>
                           </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setDropDown(false);
-                              setAuthMode("login");
-                              setAuthOpen(true);
-                            }}
-                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 hover:text-green-600 transition"
-                          >
-                            <User className="h-5 w-5 text-green-300" />
-                            <span>Login</span>
-                          </button>
-                        </>
-                      )}
+                        
+                        </div> 
 
-                    </div>
+                   
                 )}
+
                 </div>
             );
             }
@@ -637,6 +726,64 @@ const ClientNavbar = () => {
                 By continuing you agree to FoodNest’s terms and privacy policy.
               </div>
             </form>
+          </div>
+        </div>
+      </div>
+    ) : null}
+
+    {/* Mobile location prompt (shown after login) */}
+    {locBannerOpen ? (
+      <div className="sm:hidden fixed inset-x-0 bottom-3 z-[65] px-3">
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-xl p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-gray-900">Enable location?</div>
+              <div className="text-xs text-gray-600 mt-1">
+                FoodNest uses your location to show businesses near you.
+              </div>
+              {locBannerMsg ? <div className="mt-2 text-[11px] text-red-600">{locBannerMsg}</div> : null}
+            </div>
+            <button
+              type="button"
+              disabled={locBannerBusy}
+              onClick={() => {
+                setLocBannerOpen(false);
+                try {
+                  sessionStorage.setItem("fn_loc_prompt_dismissed", "1");
+                } catch {
+                  // ignore
+                }
+              }}
+              className="h-9 w-9 rounded-xl grid place-items-center hover:bg-gray-100 text-gray-600 disabled:opacity-50"
+              aria-label="Dismiss location prompt"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              disabled={locBannerBusy}
+              onClick={() => void requestLocationFromBanner()}
+              className="flex-1 h-11 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {locBannerBusy ? "Requesting…" : "Allow location"}
+            </button>
+            <button
+              type="button"
+              disabled={locBannerBusy}
+              onClick={() => {
+                setLocBannerOpen(false);
+                try {
+                  sessionStorage.setItem("fn_loc_prompt_dismissed", "1");
+                } catch {
+                  // ignore
+                }
+              }}
+              className="h-11 px-4 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Not now
+            </button>
           </div>
         </div>
       </div>

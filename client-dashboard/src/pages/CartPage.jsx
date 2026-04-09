@@ -4,6 +4,7 @@ import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet
 import { MapPin, Phone, Receipt, CreditCard, Wallet, Smartphone, Loader2, CheckCircle, FileText, Truck } from "lucide-react";
 import { io } from "socket.io-client";
 import { API_BASE_URL } from "../lib/apiBase.js";
+import { useToast } from "../components/ToastProvider.jsx";
 
 const socket = API_BASE_URL ? io(API_BASE_URL) : io();
 const API_BASE = `${API_BASE_URL}/api`;
@@ -85,11 +86,14 @@ const api = async (path, { method = "GET", token, body } = {}) => {
 
 export default function CartPage() {
   const token = localStorage.getItem("token") || "";
+  const { toast } = useToast();
 
   const [loading, setLoading] = React.useState(false);
   const [mutatingKey, setMutatingKey] = React.useState("");
   const [error, setError] = React.useState("");
   const [message, setMessage] = React.useState("");
+  const lastErrorRef = React.useRef("");
+  const lastMessageRef = React.useRef("");
   const [cart, setCart] = React.useState([]);
   const [cartBusinessId, setCartBusinessId] = React.useState("");
   const [imageUrls, setImageUrls] = React.useState({});
@@ -98,7 +102,7 @@ export default function CartPage() {
   const [distanceKm, setDistanceKm] = React.useState(null);
   const [deliveryFee, setDeliveryFee] = React.useState(0);
   const [deliveryZoneLabel, setDeliveryZoneLabel] = React.useState("");
-  const [deliveryPerKmRate, setDeliveryPerKmRate] = React.useState(0);
+  const [, setDeliveryPerKmRate] = React.useState(0);
   const [routeLine, setRouteLine] = React.useState([]);
   const [routeStats, setRouteStats] = React.useState(null);
 
@@ -116,8 +120,30 @@ export default function CartPage() {
   const [placingOrder, setPlacingOrder] = React.useState(false);
   const [paying, setPaying] = React.useState(false);
   const [placedOrderId, setPlacedOrderId] = React.useState("");
-  const [paymentMeta, setPaymentMeta] = React.useState(null);
+  const [, setPaymentMeta] = React.useState(null);
   const [autoLocationAttempted, setAutoLocationAttempted] = React.useState(false);
+
+  const variantForMessage = React.useCallback((msg) => {
+    const s = String(msg || "").toLowerCase();
+    if (!s) return "info";
+    if (s.includes("failed") || s.includes("could not")) return "warning";
+    if (s.includes("successful") || s.includes("success") || s.includes("order placed") || s.includes("added") || s.includes("updated")) return "success";
+    return "info";
+  }, []);
+
+  React.useEffect(() => {
+    if (error && error !== lastErrorRef.current) {
+      lastErrorRef.current = error;
+      toast({ variant: "error", message: error });
+    }
+  }, [error, toast]);
+
+  React.useEffect(() => {
+    if (message && message !== lastMessageRef.current) {
+      lastMessageRef.current = message;
+      toast({ variant: variantForMessage(message), message });
+    }
+  }, [message, toast, variantForMessage]);
 
   const businessCoordinates =
     businessLocation && Array.isArray(businessLocation.coordinates) && businessLocation.coordinates.length >= 2
@@ -578,9 +604,9 @@ useEffect(() => {
   })
 
   return () => socket.off("mpesa_payment_success")
-}, [placedOrderId])
+}, [placedOrderId, loadCart, token])
 
-  const useMyLocation = async () => {
+  const getMyLocation = async () => {
     setError("");
     setLocBusy(true);
     try {
@@ -619,9 +645,9 @@ useEffect(() => {
           if (status.state === "denied") return;
         } catch {
           // ignore
-        }
       }
-      await useMyLocation();
+    }
+      await getMyLocation();
     };
     setAutoLocationAttempted(true);
     void tryLocation();
@@ -688,7 +714,7 @@ useEffect(() => {
               </div>
             ) : (
               <div className="divide-y divide-gray-200">
-                {cart.map((line, idx) => {
+                {cart.map((line) => {
                   const imgUrl = line?.imageKey ? imageUrls[line.imageKey] : null;
                   const qty = Number(line.quantity || 1);
                   const price = Number(line.price || 0);
@@ -863,7 +889,7 @@ useEffect(() => {
                                   <button
                                     type="button"
                                     disabled={locBusy}
-                                    onClick={useMyLocation}
+                                    onClick={getMyLocation}
                                     className="h-8 px-3 rounded-lg bg-white border border-gray-200 text-xs font-bold text-gray-700 shadow-sm hover:border-emerald-300 hover:text-emerald-700 disabled:opacity-50 transition-all flex items-center gap-1.5"
                                   >
                                     {locBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MapPin className="w-3.5 h-3.5" />}
@@ -1029,26 +1055,29 @@ useEffect(() => {
                                 { id: "mpesa", label: "M-Pesa", icon: Smartphone },
                                 { id: "paypal", label: "PayPal", icon: CreditCard },
                                 { id: "card", label: "Card", icon: Wallet },
-                              ].map(({ id, label, icon: Icon }) => (
-                                <button
-                                  key={id}
-                                  type="button"
-                                  onClick={() => setPaymentMethod(id)}
-                                  className={`relative group flex flex-row items-center gap-2 h-10 px-3 rounded-xl border text-[13px] font-bold transition-all duration-200 overflow-hidden ${
-                                    paymentMethod === id
-                                      ? "border-emerald-500 bg-emerald-50 text-emerald-800 shadow-[0_2px_8px_rgba(16,185,129,0.1)]"
-                                      : "border-gray-200 bg-white text-gray-500 hover:border-emerald-300 hover:bg-emerald-50/30 hover:text-emerald-600"
-                                  }`}
-                                >
-                                  {paymentMethod === id && (
-                                    <div className="absolute top-1 right-1 p-1">
-                                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                    </div>
-                                  )}
-                                  <Icon className={`w-4 h-4 transition-transform duration-200 ${paymentMethod === id ? "text-emerald-500 scale-110" : "text-gray-400 group-hover:scale-110"}`} />
-                                  <span>{label}</span>
-                                </button>
-                              ))}
+                              ].map(({ id, label, icon }) => {
+                                const Icon = icon;
+                                return (
+                                  <button
+                                    key={id}
+                                    type="button"
+                                    onClick={() => setPaymentMethod(id)}
+                                    className={`relative group flex flex-row items-center gap-2 h-10 px-3 rounded-xl border text-[13px] font-bold transition-all duration-200 overflow-hidden ${
+                                      paymentMethod === id
+                                        ? "border-emerald-500 bg-emerald-50 text-emerald-800 shadow-[0_2px_8px_rgba(16,185,129,0.1)]"
+                                        : "border-gray-200 bg-white text-gray-500 hover:border-emerald-300 hover:bg-emerald-50/30 hover:text-emerald-600"
+                                    }`}
+                                  >
+                                    {paymentMethod === id && (
+                                      <div className="absolute top-1 right-1 p-1">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                                      </div>
+                                    )}
+                                    <Icon className={`w-4 h-4 transition-transform duration-200 ${paymentMethod === id ? "text-emerald-500 scale-110" : "text-gray-400 group-hover:scale-110"}`} />
+                                    <span>{label}</span>
+                                  </button>
+                                );
+                              })}
                             </div>
                             {paymentMethod === "mpesa" && (
                               <div className="mt-3 rounded-xl border border-emerald-300 bg-gradient-to-r from-emerald-50 to-teal-50/50 p-3 text-sm text-gray-700 relative overflow-hidden">

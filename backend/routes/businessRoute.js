@@ -5,6 +5,7 @@ import allowRoles from '../middleware/allowRolles.js';
 import {
     registerBusiness,
     listBusinessesPublic,
+    countBusinessesPublic,
     getBusinessMenuPublic,
     listMenuCategoriesPublic,
     listMenuCategoryCardsPublic,
@@ -20,6 +21,7 @@ const router = express.Router();
 
 // Public endpoints (client-facing)
 router.get("/", listBusinessesPublic);
+router.get("/count", countBusinessesPublic);
 router.get("/menu-categories", listMenuCategoriesPublic);
 router.get("/menu-category-cards", listMenuCategoryCardsPublic);
 router.get("/menu-item-cards", listMenuItemCardsPublic);

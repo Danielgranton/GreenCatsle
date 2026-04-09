@@ -1,6 +1,7 @@
 import React from "react";
 import { Bell, Check } from "lucide-react";
 import { API_BASE_URL } from "../lib/apiBase.js";
+import { useToast } from "../components/ToastProvider.jsx";
 
 const API_BASE = `${API_BASE_URL}/api`;
 
@@ -27,11 +28,20 @@ const formatDate = (value) => {
 
 const NotificationsPage = () => {
   const token = localStorage.getItem("token") || "";
+  const { toast } = useToast();
 
   const [notifications, setNotifications] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
+  const lastErrorRef = React.useRef("");
+
+  React.useEffect(() => {
+    if (error && error !== lastErrorRef.current) {
+      lastErrorRef.current = error;
+      toast({ variant: "error", message: error });
+    }
+  }, [error, toast]);
 
   const loadNotifications = React.useCallback(async () => {
     if (!token) {
@@ -65,13 +75,14 @@ const NotificationsPage = () => {
           prev.map((item) => (String(item._id) === String(id) ? { ...item, readAt: data?.notification?.readAt || new Date() } : item))
         );
         window.dispatchEvent(new Event("gc_notifications_updated"));
+        toast({ variant: "success", message: "Marked as read." });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to mark notification read");
       } finally {
         setBusy(false);
       }
     },
-    [token, busy]
+    [token, busy, toast]
   );
 
   const markAllRead = React.useCallback(async () => {
@@ -82,12 +93,13 @@ const NotificationsPage = () => {
       if (!ok) throw new Error("Failed to mark all read");
       setNotifications((prev) => prev.map((item) => ({ ...item, readAt: item.readAt || new Date() })));
       window.dispatchEvent(new Event("gc_notifications_updated"));
+      toast({ variant: "success", message: "All notifications marked as read." });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to mark all read");
     } finally {
       setBusy(false);
     }
-  }, [token, busy]);
+  }, [token, busy, toast]);
 
   React.useEffect(() => {
     void loadNotifications();

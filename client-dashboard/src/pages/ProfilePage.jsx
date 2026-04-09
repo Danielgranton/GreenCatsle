@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Camera, Eye, EyeOff, Loader2, Mail, Phone, Save, Shield, UserRound } from "lucide-react";
 import { API_BASE_URL } from "../lib/apiBase.js";
+import { useToast } from "../components/ToastProvider.jsx";
 
 const API_BASE = `${API_BASE_URL}/api`;
 
@@ -44,11 +45,15 @@ const initials = (name) => {
 export default function ProfilePage() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token") || "";
+  const { toast } = useToast();
 
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
   const [message, setMessage] = React.useState("");
+  const lastErrorRef = React.useRef("");
+  const lastMessageRef = React.useRef("");
+  const lastPwMsgRef = React.useRef("");
 
   const [me, setMe] = React.useState(null);
   const [avatarUrl, setAvatarUrl] = React.useState("");
@@ -65,6 +70,27 @@ export default function ProfilePage() {
   const [showNew, setShowNew] = React.useState(false);
   const [pwBusy, setPwBusy] = React.useState(false);
   const [pwMsg, setPwMsg] = React.useState("");
+
+  React.useEffect(() => {
+    if (error && error !== lastErrorRef.current) {
+      lastErrorRef.current = error;
+      toast({ variant: "error", message: error });
+    }
+  }, [error, toast]);
+
+  React.useEffect(() => {
+    if (message && message !== lastMessageRef.current) {
+      lastMessageRef.current = message;
+      toast({ variant: "success", message });
+    }
+  }, [message, toast]);
+
+  React.useEffect(() => {
+    if (pwMsg && pwMsg !== lastPwMsgRef.current) {
+      lastPwMsgRef.current = pwMsg;
+      toast({ variant: "success", message: pwMsg });
+    }
+  }, [pwMsg, toast]);
 
   const loadMe = React.useCallback(async () => {
     if (!token) {

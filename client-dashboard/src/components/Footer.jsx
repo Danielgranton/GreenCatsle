@@ -85,7 +85,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="border-t border-gray-200 bg-gradient-to-b from-gray-50 via-white to-white">
+    <footer className="border-t border-gray-200 bg-gradient-to-b from-gray-100 via-gray-100 to-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Brand */}
@@ -168,46 +168,40 @@ export default function Footer() {
             ))}
           </div>
 
-          {/* Mobile accordions */}
-          <div className="lg:hidden space-y-3">
+          {/* Mobile sections (always open) */}
+          <div className="lg:hidden space-y-4">
             {sections.map((s) => (
-              <details key={s.title} className="group rounded-2xl border border-gray-200 bg-white/70">
-                <summary className="list-none cursor-pointer px-4 py-3 flex items-center justify-between gap-3">
-                  <div className="text-sm font-semibold text-gray-900">{s.title}</div>
-                  <span className="text-xs text-gray-500 group-open:hidden">Tap</span>
-                  <span className="text-xs text-gray-500 hidden group-open:inline">Close</span>
-                </summary>
-                <div className="px-4 pb-4">
-                  <ul className="space-y-2">
-                    {s.items.map((it) => (
-                      <li key={it.label}>
-                        <FooterLink
-                          icon={it.icon}
-                          to={it.to}
-                          href={it.href}
-                          className={
-                            s.title === "Trust" && (it.to === "/privacy" || it.to === "/data-deletion")
-                              ? "px-3 py-2 rounded-lg bg-green-100 hover:bg-green-200 border border-gray-200 text-gray-800 font-semibold w-full"
-                              : ""
-                          }
-                        >
-                          {it.label}
-                        </FooterLink>
-                      </li>
-                    ))}
-                  </ul>
+              <div key={s.title} className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <div className="text-sm font-semibold text-gray-900">{s.title}</div>
+                <ul className="mt-3 space-y-2">
+                  {s.items.map((it) => (
+                    <li key={it.label}>
+                      <FooterLink
+                        icon={it.icon}
+                        to={it.to}
+                        href={it.href}
+                        className={
+                          s.title === "Trust" && (it.to === "/privacy" || it.to === "/data-deletion")
+                            ? "px-3 py-2 rounded-lg bg-green-100 hover:bg-green-200 border border-gray-200 text-gray-800 font-semibold w-full"
+                            : ""
+                        }
+                      >
+                        {it.label}
+                      </FooterLink>
+                    </li>
+                  ))}
+                </ul>
 
-                  {s.title === "Trust" ? (
-                    <div className="mt-4 flex items-start gap-3 p-3 rounded-2xl border border-emerald-200 bg-emerald-50">
-                      <ShieldCheck className="w-4 h-4 text-emerald-700 mt-0.5" />
-                      <div className="text-sm text-gray-700">
-                        <div className="font-semibold text-gray-900">Verified businesses</div>
-                        <div className="text-xs text-gray-500 mt-1">Quality listings and safer browsing.</div>
-                      </div>
+                {s.title === "Trust" ? (
+                  <div className="mt-4 flex items-start gap-3 p-3 rounded-2xl border border-emerald-200 bg-emerald-50">
+                    <ShieldCheck className="w-4 h-4 text-emerald-700 mt-0.5" />
+                    <div className="text-sm text-gray-700">
+                      <div className="font-semibold text-gray-900">Verified businesses</div>
+                      <div className="text-xs text-gray-500 mt-1">Quality listings and safer browsing.</div>
                     </div>
-                  ) : null}
-                </div>
-              </details>
+                  </div>
+                ) : null}
+              </div>
             ))}
           </div>
         </div>

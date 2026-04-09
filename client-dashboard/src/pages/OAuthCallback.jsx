@@ -1,5 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { flashToast } from "../components/ToastProvider.jsx";
 
 const b64urlToStr = (s) => {
   try {
@@ -38,6 +39,7 @@ export default function OAuthCallback() {
     }
 
     // Full refresh so the navbar + app state is consistent after social login.
+    flashToast({ variant: "success", message: "Signed in successfully." });
     window.location.replace("/#ads-section");
   }, [location.search, navigate]);
 

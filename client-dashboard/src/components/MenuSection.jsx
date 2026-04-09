@@ -10,8 +10,10 @@ import {
   ShoppingBasket,
   Sandwich,
   ForkKnife,
+  Loader2,
 } from "lucide-react";
 import { API_BASE_URL } from "../lib/apiBase.js";
+import { useToast } from "./ToastProvider.jsx";
 
 const API_BASE = `${API_BASE_URL}/api`;
 
@@ -68,18 +70,12 @@ export default function MenuSection({
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsError, setItemsError] = useState("");
   const [items, setItems] = useState([]);
-  const [cartToast, setCartToast] = useState("");
+  const [addingById, setAddingById] = useState({});
 
   const itemsAbortRef = useRef(null);
   const itemsCacheRef = useRef({});
   const detailsRef = useRef(null);
-  const toastTimerRef = useRef(null);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    };
-  }, []);
+  const { toast } = useToast();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -173,7 +169,8 @@ export default function MenuSection({
 
   const addToCart = async (menuItem) => {
     setError("");
-    setCartToast("");
+    const itemId = String(menuItem?.id || menuItem?._id || "");
+    if (itemId) setAddingById((p) => ({ ...p, [itemId]: true }));
     try {
       const token = localStorage.getItem("token") || "";
       if (!token) throw new Error("Please login to add items to cart.");
@@ -184,12 +181,20 @@ export default function MenuSection({
       });
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok || !data?.success) throw new Error(data?.message || "Failed to add to cart");
-      setCartToast("Added to cart");
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-      toastTimerRef.current = setTimeout(() => setCartToast(""), 1500);
+      toast({ variant: "success", message: "Added to cart" });
       window.dispatchEvent(new Event("gc_cart_updated"));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add to cart");
+      const msg = e instanceof Error ? e.message : "Failed to add to cart";
+      setError(msg);
+      toast({ variant: "error", message: msg });
+    } finally {
+      if (itemId) {
+        setAddingById((p) => {
+          const next = { ...p };
+          delete next[itemId];
+          return next;
+        });
+      }
     }
   };
 
@@ -233,11 +238,6 @@ export default function MenuSection({
 
       {error ? (
         <div className="mt-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl p-4 text-sm">{error}</div>
-      ) : null}
-      {cartToast ? (
-        <div className="mt-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl p-4 text-sm">
-          {cartToast}
-        </div>
       ) : null}
 
       <div className="mt-5">
@@ -399,9 +399,18 @@ export default function MenuSection({
                       <button
                         type="button"
                         onClick={() => addToCart(it)}
-                        className="mt-3 w-full h-8 rounded-xl bg-yellow-400  text-sm font-semibold hover:bg-yellow-500 duration-150"
+                        disabled={Boolean(addingById[String(it?.id || it?._id || "")])}
+                        aria-busy={Boolean(addingById[String(it?.id || it?._id || "")])}
+                        className="mt-3 w-full h-8 rounded-xl bg-yellow-400 text-sm font-semibold hover:bg-yellow-500 duration-150 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
                       >
-                        Add to cart
+                        {addingById[String(it?.id || it?._id || "")] ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Adding…
+                          </>
+                        ) : (
+                          "Add to cart"
+                        )}
                       </button>
                     </div>
                   </div>

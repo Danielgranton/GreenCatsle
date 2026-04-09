@@ -34,15 +34,14 @@ export default function HomePage() {
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
     const mql = window.matchMedia("(min-width: 1024px)");
-    const onChange = () => setIsDesktop(mql.matches);
-    onChange();
+    const onChange = () => {
+      const nextIsDesktop = mql.matches;
+      setIsDesktop(nextIsDesktop);
+      if (nextIsDesktop) setDiscoveryOpen(false);
+    };
     mql.addEventListener?.("change", onChange);
     return () => mql.removeEventListener?.("change", onChange);
   }, []);
-
-  useEffect(() => {
-    if (isDesktop && discoveryOpen) setDiscoveryOpen(false);
-  }, [isDesktop, discoveryOpen]);
 
   useEffect(() => {
     if (!discoveryOpen) return;

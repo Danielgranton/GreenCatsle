@@ -5,9 +5,12 @@ import App from './App.jsx'
 import { BrowserRouter } from 'react-router-dom'
 import "leaflet/dist/leaflet.css";
 import "./lib/leafletConfig";
+import { ToastProvider } from "./components/ToastProvider.jsx";
 
 createRoot(document.getElementById('root')).render(
-  <BrowserRouter>
-    <App />
-  </BrowserRouter>
+  <ToastProvider>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </ToastProvider>
 )

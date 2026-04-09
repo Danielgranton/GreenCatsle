@@ -54,6 +54,16 @@ export const listBusinessesPublic = async (req, res) => {
   }
 };
 
+export const countBusinessesPublic = async (req, res) => {
+  try {
+    const count = await Business.countDocuments({ status: "active" });
+    res.status(200).json({ success: true, count });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Failed to count businesses" });
+  }
+};
+
 export const getBusinessPublicDetails = async (req, res) => {
   try {
     const { businessId } = req.params;
